@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alphabet</title>
+  <meta name="description" content="Alphabet's portfolio. Websites I've built." />
+  <meta property="og:title" content="Alphabet" />
+  <meta property="og:description" content="Websites I've built." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ededef'/><text x='50' y='72' font-size='64' font-family='system-ui' font-weight='600' text-anchor='middle' fill='%2309090b'>A</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090b;
+      --text: #ededef;
+      --muted: #87888f;
+      --dim: #5b5c63;
+      --line: #1b1b1f;
+      --line-hi: #2c2c32;
+      --max: 980px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    *:focus-visible {
+      outline: 1px solid var(--muted);
+      outline-offset: 3px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background:
+        radial-gradient(1100px 600px at 50% -25%, rgba(255,255,255,.045), transparent 70%),
+        var(--bg);
+      color: var(--text);
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    a:active { background: transparent; }
+
+    .container {
+      width: min(100% - 48px, var(--max));
+      margin-inline: auto;
+    }
+
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(9,9,11,.72);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px 0;
+    }
+
+    .wordmark {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: 1rem;
+    }
+
+    nav ul {
+      display: flex;
+      gap: 26px;
+      list-style: none;
+      font-size: .9rem;
+      color: var(--muted);
+    }
+
+    nav a { transition: color .2s ease; }
+    nav a:hover { color: var(--text); }
+
+    .hero { padding: 130px 0 90px; }
+
+    .label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: var(--dim);
+      margin-bottom: 26px;
+    }
+
+    h1 {
+      font-size: clamp(3.2rem, 11vw, 6.8rem);
+      line-height: .9;
+      letter-spacing: -0.055em;
+      font-weight: 500;
+    }
+
+    .lede {
+      margin-top: 28px;
+      max-width: 560px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.12rem);
+    }
+
+    .hero-links {
+      margin-top: 40px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: .88rem;
+      font-weight: 500;
+      border: 1px solid var(--line-hi);
+      color: var(--text);
+      transition: background .2s ease, border-color .2s ease, color .2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,.05);
+      border-color: #3a3a42;
+    }
+
+    .btn-solid {
+      background: var(--text);
+      color: #09090b;
+      border-color: var(--text);
+    }
+
+    .btn-solid:hover {
+      background: #c9c9cd;
+      border-color: #c9c9cd;
+      color: #09090b;
+    }
+
+    .btn svg { transition: transform .2s ease; }
+    .btn:hover svg { transform: translate(2px, -2px); }
+
+    section { padding: 70px 0; }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 20px;
+      margin-bottom: 4px;
+    }
+
+    .section-head h2 {
+      font-size: .72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: var(--dim);
+    }
+
+    .section-head .count {
+      font-size: .72rem;
+      letter-spacing: .1em;
+      color: var(--dim);
+    }
+
+    .projects { border-top: 1px solid var(--line); }
+
+    .project {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 24px;
+      align-items: center;
+      padding: 28px 10px 28px 0;
+      border-bottom: 1px solid var(--line);
+      transition: background .25s ease, padding-left .25s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .project:hover {
+      background: rgba(255,255,255,.022);
+      padding-left: 12px;
+    }
+
+    .num {
+      font-size: .78rem;
+      color: var(--dim);
+      letter-spacing: .06em;
+    }
+
+    .project h3 {
+      font-size: 1.22rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      transition: color .2s ease;
+    }
+
+    .project p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .92rem;
+      max-width: 54ch;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .stack {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--dim);
+      border: 1px solid var(--line);
+      padding: 5px 9px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    .arrow {
+      color: var(--dim);
+      display: flex;
+      transition: transform .25s ease, color .25s ease;
+    }
+
+    .project:hover .arrow {
+      transform: translate(2px, -2px);
+      color: var(--text);
+    }
+
+    .empty {
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--dim);
+      font-size: .92rem;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 40px;
+      border-top: 1px solid var(--line);
+      padding-top: 34px;
+    }
+
+    .about-grid h2 {
+      font-size: .72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: var(--dim);
+    }
+
+    .about-text p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 62ch;
+    }
+
+    .about-text p + p { margin-top: 18px; }
+
+    .about-text strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 30px 0 48px;
+      margin-top: 40px;
+      font-size: .84rem;
+      color: var(--dim);
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 22px;
+    }
+
+    .footer-links a { transition: color .2s ease; }
+    .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 760px) {
+      nav ul { display: none; }
+      .hero { padding: 84px 0 60px; }
+      .project {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 24px 0;
+      }
+      .project:hover { padding-left: 0; background: transparent; }
+      .num { display: none; }
+      .meta { justify-content: space-between; }
+      .stack { white-space: normal; }
+      .about-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="wordmark" href="#top">Alphabet</a>
+      <nav aria-label="Main navigation">
+        <ul>
+          <li><a href="#work">Work</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="https://github.com/lusheeesh" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <p class="label mono">Portfolio</p>
+        <h1>Alphabet</h1>
+        <p class="lede">
+          I make websites. Some are for school, some are jokes, one is a chat room.
+          All of them are live.
+        </p>
+        <div class="hero-links">
+          <a class="btn btn-solid" href="#work">
+            View work
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14"/><path d="m5 12 7 7 7-7"/>
+            </svg>
+          </a>
+          <a class="btn" href="https://github.com/lusheeesh" target="_blank" rel="noopener noreferrer">
+            GitHub
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 17 17 7"/><path d="M7 7h10v10"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="work">
+      <div class="container">
+        <div class="section-head">
+          <h2>Work</h2>
+          <span class="count mono" id="count"></span>
+        </div>
+        <div class="projects" id="projects"></div>
+      </div>
+    </section>
+
+    <section id="about">
+      <div class="container">
+        <div class="about-grid">
+          <h2>About</h2>
+          <div class="about-text">
+            <p>
+              I'm <strong>Alphabet</strong>. I build websites in my spare time. Most of them
+              are plain HTML, nothing fancy behind them. Afterhours is the exception, it needed
+              a real backend so I used Supabase and Next.js.
+            </p>
+            <p>
+              Some of these are serious, some aren't. Sekke is a joke at my math teacher's expense.
+              Secretion is where I keep the projects I don't want everyone seeing.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>© <span id="year"></span> Alphabet</span>
+      <div class="footer-links">
+        <a href="https://github.com/lusheeesh" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="#work">Work</a>
+        <a href="#top">Top</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="projects.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    (function () {
+      const list = document.getElementById("projects");
+      const count = document.getElementById("count");
+      const data = (typeof projects !== "undefined" && Array.isArray(projects)) ? projects : [];
+
+      count.textContent = String(data.length).padStart(2, "0");
+
+      if (!data.length) {
+        list.innerHTML = '<p class="empty">No projects yet.</p>';
+        return;
+      }
+
+      const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (c) => {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+
+      const arrow = '<span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg></span>';
+
+      list.innerHTML = data.map((p, i) => {
+        const num = String(i + 1).padStart(2, "0");
+        return '<a class="project" href="' + escapeHtml(p.url) + '" target="_blank" rel="noopener noreferrer">'
+          + '<span class="num mono">' + num + '</span>'
+          + '<div>'
+          + '<h3>' + escapeHtml(p.name) + '</h3>'
+          + '<p>' + escapeHtml(p.description) + '</p>'
+          + '</div>'
+          + '<div class="meta">'
+          + '<span class="stack mono">' + escapeHtml(p.stack) + '</span>'
+          + arrow
+          + '</div>'
+          + '</a>';
+      }).join("");
+    })();
+  </script>
+</body>
+</html>
