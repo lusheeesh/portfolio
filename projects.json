@@ -18,6 +18,12 @@
     "stack": "HTML · CSS · JS · Vercel"
   },
   {
+    "name": "FHWlan",
+    "description": "A website to generate wifi password only if it starts with fh.",
+    "url": "https://fhwlan.vercel.app",
+    "stack": "HTML · CSS · JS · Vercel"
+  },
+  {
     "name": "Afterhours",
     "description": "An invite-only global chat room.",
     "url": "https://afterhours-ten-tau.vercel.app/",
