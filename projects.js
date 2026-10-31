@@ -15,15 +15,15 @@ const projects = [
     stack: "HTML · CSS · JS · Vercel"
   },
   {
-    name: "Afterhours",
-    description: "An invite-only global chat room.",
-    url: "https://afterhours-ten-tau.vercel.app/",
-    stack: "Next.js · Supabase · Vercel"
-  },
-  {
     name: "Secretion",
     description: "My hidden projects, sitting behind a password gate.",
     url: "https://secretion.vercel.app",
     stack: "HTML · CSS · JS · Vercel"
+  },
+  {
+    name: "Afterhours",
+    description: "An invite-only global chat room.",
+    url: "https://afterhours-ten-tau.vercel.app/",
+    stack: "Next.js · Supabase · Vercel"
   }
 ];
