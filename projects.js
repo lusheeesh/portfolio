@@ -6,13 +6,13 @@ const projects = [
     name: "FStudent",
     description: "A student roster. Plain HTML.",
     url: "https://fstudent.netlify.app",
-    stack: "HTML · Netlify"
+    stack: "HTML · CSS · JS · Netlify"
   },
   {
     name: "Sekke",
     description: "A parody of my math teacher. Not serious, just HTML.",
     url: "https://sekke.vercel.app",
-    stack: "HTML · Vercel"
+    stack: "HTML · CSS · JS · Vercel"
   },
   {
     name: "Afterhours",
@@ -24,6 +24,6 @@ const projects = [
     name: "Secretion",
     description: "My hidden projects, sitting behind a password gate.",
     url: "https://secretion.vercel.app",
-    stack: "HTML · Vercel"
+    stack: "HTML · CSS · JS · Vercel"
   }
 ];
