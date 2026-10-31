@@ -419,14 +419,12 @@
     </div>
   </footer>
 
-  <script src="projects.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    (function () {
+    function renderProjects(data) {
       const list = document.getElementById("projects");
       const count = document.getElementById("count");
-      const data = (typeof projects !== "undefined" && Array.isArray(projects)) ? projects : [];
 
       count.textContent = String(data.length).padStart(2, "0");
 
@@ -455,7 +453,18 @@
           + '</div>'
           + '</a>';
       }).join("");
-    })();
+    }
+
+    fetch("projects.json", { cache: "no-cache" })
+      .then((res) => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(renderProjects)
+      .catch(() => {
+        document.getElementById("projects").innerHTML =
+          '<p class="empty">Failed to load projects.json</p>';
+      });
   </script>
 </body>
 </html>
