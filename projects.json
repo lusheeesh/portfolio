@@ -1,5 +1,12 @@
 [
   {
+  "_example": true,
+  "name": "A",
+  "description": "B",
+  "url": "C",
+  "stack": "HTML · CSS · JS · "
+  },
+  {
     "name": "FStudent",
     "description": "A student roster. Plain HTML.",
     "url": "https://fstudent.netlify.app",
@@ -22,6 +29,12 @@
     "description": "A website to generate wifi password only if it starts with fh.",
     "url": "https://fhwlan.vercel.app",
     "stack": "HTML · CSS · JS · Vercel"
+  },
+  {
+    "name": "Is It 2027 Yet?",
+    "description": "Countdown to 2027.",
+    "url": "https://alphabet.is-cool.dev/isit2027yet",
+    "stack": "HTML · CSS · JS · Subdirectory"
   },
   {
     "name": "Afterhours",
