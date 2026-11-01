@@ -1,12 +1,5 @@
 [
   {
-  "_example": true,
-  "name": "A",
-  "description": "B",
-  "url": "C",
-  "stack": "HTML · CSS · JS · "
-  },
-  {
     "name": "FStudent",
     "description": "A student roster. Plain HTML.",
     "url": "https://fstudent.netlify.app",
@@ -32,7 +25,7 @@
   },
   {
     "name": "Is It 2027 Yet?",
-    "description": "Countdown to 2027.",
+    "description": "A live countdown to 2027.",
     "url": "https://alphabet.is-cool.dev/isit2027yet",
     "stack": "HTML · CSS · JS · Subdirectory"
   },
