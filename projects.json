@@ -34,5 +34,11 @@
     "description": "An invite-only global chat room.",
     "url": "https://afterhours-ten-tau.vercel.app/",
     "stack": "Next.js · Supabase · Vercel"
+  },
+  {
+    "name": "10-Second Sketch",
+    "description": "You get 10 seconds and one prompt. A sarcastic AI judges how badly you drew.",
+    "url": "https://10secdraw.vercel.app/",
+    "stack": "HTML · CSS · JS · OpenRouter · Vercel"
   }
 ]
