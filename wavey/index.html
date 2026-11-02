@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f8f4eb">
+<title>wavey — sound laboratory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400..900;1,9..40,400..900&display=swap');
+
+:root {
+  --paper: #f8f4eb;
+  --paper-card: #ffffff;
+  --ink: #22221b;
+  --muted: #727063;
+  --line: #e4ded1;
+  --line-strong: #c8c1b2;
+  --orange: #ff704d;
+  --orange-hover: #ff5733;
+  --mint: #bfe4d3;
+  --mint-glow: #36f0a3;
+  --dark-bg: #141c1c;
+  --yellow: #f7d369;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 40px;
+}
+
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.wrap {
+  width: min(100% - 32px, 920px);
+  margin: 0 auto;
+}
+
+/* Header & Brand */
+header {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+
+.logo-box {
+  width: 38px;
+  height: 38px;
+  background: var(--orange);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  transform: rotate(-6deg);
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand:hover .logo-box {
+  transform: rotate(4deg) scale(1.08);
+}
+
+.brand span {
+  color: var(--orange);
+}
+
+.top-utils {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-util {
+  background: #fff;
+  border: 1.5px solid var(--line-strong);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 0 var(--line);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.btn-util:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.btn-util:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 transparent;
+}
+
+/* Studio Panel */
+main {
+  padding: 28px 0;
+}
+
+.studio-card {
+  background: var(--paper-card);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(32, 32, 26, 0.04);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+
+.panel-title {
+  font: 11px "DM Mono", monospace;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 11px "DM Mono", monospace;
+  color: var(--muted);
+  background: #f0ebe1;
+  padding: 4px 10px;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+}
+
+.live-indicator.active {
+  background: #e6f7ef;
+  color: #1b7a4a;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #aaa79c;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.live-indicator.active .live-dot {
+  background: var(--mint-glow);
+  box-shadow: 0 0 8px var(--mint-glow);
+  animation: pulse-dot 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+/* Oscilloscope Canvas */
+.visualizer-box {
+  height: 250px;
+  border-radius: var(--radius-md);
+  background: var(--dark-bg);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #2b3838;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.visual-badge {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  font: 10px "DM Mono", monospace;
+  letter-spacing: 0.12em;
+  color: #729688;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.readout-box {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  text-align: right;
+  color: #a3c4b5;
+  font: 10px "DM Mono", monospace;
+  pointer-events: none;
+}
+
+.readout-box strong {
+  font-size: 24px;
+  color: #ffffff;
+  display: block;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Status Bar below Canvas */
+.canvas-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 4px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.note-badge {
+  font: 12px "DM Mono", monospace;
+  background: #f4efe4;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+/* Control Layout Grid */
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.card {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: #fffdfa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.card-head .val-tag {
+  font: 11px "DM Mono", monospace;
+  color: var(--orange);
+  background: #fff3f0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #ffd8cf;
+}
+
+/* Range Inputs */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-family: "DM Mono", monospace;
+  color: var(--muted);
+}
+
+input[type=range] {
+  width: 100%;
+  height: 6px;
+  background: #e6e0d4;
+  border-radius: 3px;
+  outline: none;
+  accent-color: var(--orange);
+  cursor: pointer;
+}
+
+/* Pitch Nudge Grid */
+.nudge-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.nudge-btn {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 7px 4px;
+  font: 11px "DM Mono", monospace;
+  font-weight: 500;
+  text-align: center;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.nudge-btn:hover {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.nudge-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 transparent;
+}
+
+/* Wave Selector Buttons */
+.wave-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.wave-btn {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.wave-btn:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.wave-btn.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  box-shadow: 0 3px 0 var(--orange);
+}
+
+.wave-btn:active {
+  transform: scale(0.96);
+}
+
+/* Vibrato Switch Header */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #e4ded1;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  border: 1.5px solid var(--line-strong);
+}
+
+.toggle-switch.active {
+  background: var(--orange);
+  border-color: var(--ink);
+}
+
+.toggle-switch .handle {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active .handle {
+  transform: translateX(20px);
+}
+
+/* Presets Chip Grid */
+.presets-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  border-radius: 99px;
+  padding: 6px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.preset-chip:hover {
+  border-color: var(--ink);
+  transform: translateY(-1.5px);
+}
+
+.preset-chip.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  box-shadow: 0 3px 0 var(--orange);
+}
+
+.preset-chip:active {
+  transform: scale(0.95);
+}
+
+/* Action Bar */
+.actions-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.btn-play {
+  flex: 2;
+  min-width: 200px;
+  border: 2px solid var(--ink);
+  background: var(--orange);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-play.playing {
+  background: #22c55e;
+}
+
+.btn-play:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--ink);
+}
+
+.btn-play:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.btn-random {
+  flex: 1;
+  min-width: 140px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-random:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--ink);
+}
+
+.btn-random:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.btn-random .dice-icon {
+  display: inline-block;
+  transition: transform 0.4s ease;
+}
+
+.btn-random:hover .dice-icon {
+  transform: rotate(180deg) scale(1.1);
+}
+
+/* Responsiveness */
+@media (max-width: 680px) {
+  .visualizer-box { height: 210px; }
+  .controls-grid { grid-template-columns: 1fr; }
+  .actions-bar { flex-direction: column; }
+  .btn-play, .btn-random { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <div class="logo-box">〰</div>
+      wave<span>y</span>
+    </div>
+    <div class="top-utils">
+      <button class="btn-util" id="muteToggle">
+        <span id="muteIcon">🔊</span> <span id="muteLabel">UNMUTED</span>
+      </button>
+      <button class="btn-util" id="resetBtn">
+        ↺ RESET
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="studio-card">
+    <div class="panel-header">
+      <div class="panel-title">01 / LIVE OSCILLOSCOPE</div>
+      <div class="live-indicator" id="liveStatus">
+        <span class="live-dot"></span>
+        <span id="liveText">SILENT MODE</span>
+      </div>
+    </div>
+
+    <!-- Oscilloscope Canvas -->
+    <div class="visualizer-box">
+      <canvas id="scopeCanvas" aria-label="Audio Oscilloscope Visualizer"></canvas>
+      <div class="visual-badge">SIGNAL / REAL-TIME ANALYZER</div>
+      <div class="readout-box">
+        <strong id="freqBigReadout">220.0</strong>
+        <span>HERTZ</span>
+      </div>
+    </div>
+
+    <!-- Canvas Status Line -->
+    <div class="canvas-status-bar">
+      <div class="note-badge" id="noteReadout">A3 · 220.0 Hz</div>
+      <div id="vibratoStatusReadout" style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);">
+        Vibrato: OFF
+      </div>
+    </div>
+
+    <!-- Control Deck -->
+    <div class="controls-grid">
+      
+      <!-- Card 1: Pitch & Frequency Controls -->
+      <div class="card">
+        <div class="card-head">
+          <span>Pitch Control</span>
+          <span class="val-tag" id="freqTag">220.0 Hz</span>
+        </div>
+
+        <div class="slider-group">
+          <input id="freqSlider" type="range" min="40" max="1200" value="220" step="0.5">
+          <div class="slider-label-row">
+            <span>40 Hz (LOW)</span>
+            <span>1200 Hz (HIGH)</span>
+          </div>
+        </div>
+
+        <!-- Pitch Nudges -->
+        <div class="slider-group">
+          <div class="slider-label-row" style="margin-bottom: 2px;">
+            <span>PITCH NUDGES</span>
+          </div>
+          <div class="nudge-row">
+            <button class="nudge-btn" data-nudge="-oct">-1 OCT</button>
+            <button class="nudge-btn" data-nudge="-semi">-1 SEMI</button>
+            <button class="nudge-btn" data-nudge="+semi">+1 SEMI</button>
+            <button class="nudge-btn" data-nudge="+oct">+1 OCT</button>
+          </div>
+        </div>
+
+        <!-- Fine Tune -->
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>FINE TUNE</span>
+            <span id="fineTuneTag">0.0 Hz</span>
+          </div>
+          <input id="fineTuneSlider" type="range" min="-10" max="10" value="0" step="0.1">
+        </div>
+      </div>
+
+      <!-- Card 2: Waveform & Shape Morphing -->
+      <div class="card">
+        <div class="card-head">
+          <span>Wave Shape</span>
+          <span class="val-tag" id="waveTag">SINE</span>
+        </div>
+
+        <div class="wave-grid">
+          <button class="wave-btn active" data-wave="sine">〰 Sine</button>
+          <button class="wave-btn" data-wave="triangle">△ Triangle</button>
+          <button class="wave-btn" data-wave="square">⊓ Square</button>
+          <button class="wave-btn" data-wave="sawtooth">◁ Sawtooth</button>
+        </div>
+
+        <div class="slider-group" style="margin-top: 4px;">
+          <div class="slider-label-row">
+            <span>HARMONIC MORPH EXPERIMENT</span>
+            <span id="morphTag">0%</span>
+          </div>
+          <input id="morphSlider" type="range" min="0" max="100" value="0" step="1">
+        </div>
+      </div>
+
+      <!-- Card 3: Volume & Vibrato Engine -->
+      <div class="card">
+        <div class="card-head">
+          <span>Master Volume</span>
+          <span class="val-tag" id="volTag">50%</span>
+        </div>
+
+        <div class="slider-group">
+          <input id="volSlider" type="range" min="0" max="100" value="50" step="1">
+        </div>
+
+        <div class="switch-row" style="margin-top: 6px;">
+          <span style="font-size: 13px; font-weight: 800;">Vibrato LFO</span>
+          <div class="toggle-switch" id="vibratoToggle" role="switch" aria-checked="false" tabindex="0">
+            <div class="handle"></div>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>VIBRATO DEPTH</span>
+            <span id="vibDepthTag">8 Hz</span>
+          </div>
+          <input id="vibDepthSlider" type="range" min="0" max="50" value="8" step="1">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>VIBRATO RATE</span>
+            <span id="vibRateTag">5 Hz</span>
+          </div>
+          <input id="vibRateSlider" type="range" min="1" max="15" value="5" step="0.5">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Presets Section -->
+    <div class="card" style="margin-top: 16px;">
+      <div class="card-head">
+        <span>Sound Preset Library</span>
+        <span style="font-size: 11px; font-weight: 500; color: var(--muted);">Click to load recipe</span>
+      </div>
+      <div class="presets-wrap" id="presetsWrap">
+        <!-- Preset Chips rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-bar">
+      <button class="btn-play" id="playBtn">
+        <span id="playIcon">▶</span>
+        <span id="playText">MAKE SOME NOISE</span>
+      </button>
+      <button class="btn-random" id="randomBtn">
+        <span class="dice-icon">🎲</span> Surprise Me
+      </button>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  // Master App State
+  const state = {
+    frequency: 220,
+    fineTune: 0,
+    waveform: 'sine',
+    morph: 0,
+    volume: 50,
+    isMuted: false,
+    isPlaying: false,
+    vibratoOn: false,
+    vibratoDepth: 8,
+    vibratoRate: 5,
+    activePreset: 'cozy'
+  };
+
+  // Presets definition
+  const PRESETS = [
+    { id: 'cozy', name: '☁️ Cozy', freq: 220, wave: 'sine', morph: 0, vib: false, vibDepth: 8, vibRate: 5 },
+    { id: 'beep', name: '✨ Beep', freq: 440, wave: 'triangle', morph: 0, vib: false, vibDepth: 8, vibRate: 5 },
+    { id: 'subby', name: '🐢 Subby', freq: 82, wave: 'sine', morph: 0, vib: false, vibDepth: 8, vibRate: 5 },
+    { id: 'space', name: '🌌 Deep Space', freq: 55, wave: 'triangle', morph: 25, vib: true, vibDepth: 12, vibRate: 2 },
+    { id: 'arcade', name: '👾 Retro Arcade', freq: 587, wave: 'square', morph: 0, vib: true, vibDepth: 15, vibRate: 12 },
+    { id: 'alien', name: '🛸 Alien Comm', freq: 880, wave: 'sawtooth', morph: 35, vib: true, vibDepth: 25, vibRate: 9 },
+    { id: 'phone', name: '📞 Telephone', freq: 440, wave: 'square', morph: 0, vib: true, vibDepth: 6, vibRate: 4 },
+    { id: 'dreamy', name: '🌙 Dreamy', freq: 330, wave: 'sine', morph: 30, vib: true, vibDepth: 8, vibRate: 3.5 },
+    { id: 'robot', name: '🤖 Robot Buzz', freq: 150, wave: 'sawtooth', morph: 50, vib: true, vibDepth: 18, vibRate: 14 },
+    { id: 'bird', name: '🐤 Tiny Bird', freq: 1047, wave: 'sine', morph: 0, vib: true, vibDepth: 20, vibRate: 11 },
+    { id: 'ufo', name: '🛸 UFO Wobble', freq: 650, wave: 'sine', morph: 15, vib: true, vibDepth: 35, vibRate: 6 },
+    { id: 'drop', name: '💥 Bass Drop', freq: 45, wave: 'sine', morph: 10, vib: false, vibDepth: 8, vibRate: 5 }
+  ];
+
+  // DOM Elements
+  const canvas = document.getElementById('scopeCanvas');
+  const ctx = canvas.getContext('2d');
+  const playBtn = document.getElementById('playBtn');
+  const playIcon = document.getElementById('playIcon');
+  const playText = document.getElementById('playText');
+  const randomBtn = document.getElementById('randomBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const muteToggle = document.getElementById('muteToggle');
+  const muteIcon = document.getElementById('muteIcon');
+  const muteLabel = document.getElementById('muteLabel');
+  
+  const freqSlider = document.getElementById('freqSlider');
+  const freqTag = document.getElementById('freqTag');
+  const freqBigReadout = document.getElementById('freqBigReadout');
+  const fineTuneSlider = document.getElementById('fineTuneSlider');
+  const fineTuneTag = document.getElementById('fineTuneTag');
+  const noteReadout = document.getElementById('noteReadout');
+  
+  const waveTag = document.getElementById('waveTag');
+  const waveButtons = document.querySelectorAll('.wave-btn');
+  const morphSlider = document.getElementById('morphSlider');
+  const morphTag = document.getElementById('morphTag');
+  
+  const volSlider = document.getElementById('volSlider');
+  const volTag = document.getElementById('volTag');
+  const vibratoToggle = document.getElementById('vibratoToggle');
+  const vibDepthSlider = document.getElementById('vibDepthSlider');
+  const vibDepthTag = document.getElementById('vibDepthTag');
+  const vibRateSlider = document.getElementById('vibRateSlider');
+  const vibRateTag = document.getElementById('vibRateTag');
+  const vibratoStatusReadout = document.getElementById('vibratoStatusReadout');
+  
+  const liveStatus = document.getElementById('liveStatus');
+  const liveText = document.getElementById('liveText');
+  const presetsWrap = document.getElementById('presetsWrap');
+
+  // Web Audio Nodes
+  let audioCtx = null;
+  let mainOsc = null;
+  let lfoOsc = null;
+  let lfoGain = null;
+  let masterGain = null;
+  let analyser = null;
+
+  let animFrameId = 0;
+  let previewPhase = 0;
+
+  // Musical Note Helpers
+  const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+  function getNoteInfo(hz) {
+    const midi = Math.round(69 + 12 * Math.log2(hz / 440));
+    const note = NOTE_NAMES[(midi % 12 + 12) % 12];
+    const octave = Math.floor(midi / 12) - 1;
+    return `${note}${octave} · ${hz.toFixed(1)} Hz`;
+  }
+
+  function getEffectiveFreq() {
+    return Math.max(40, Math.min(1200, state.frequency + state.fineTune));
+  }
+
+  // Audio Context Initialization
+  function initAudio() {
+    if (audioCtx) return;
+    const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtxClass) return;
+
+    audioCtx = new AudioCtxClass();
+    
+    // Nodes creation
+    mainOsc = audioCtx.createOscillator();
+    lfoOsc = audioCtx.createOscillator();
+    lfoGain = audioCtx.createGain();
+    masterGain = audioCtx.createGain();
+    analyser = audioCtx.createAnalyser();
+
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.2;
+
+    // Connect LFO for Vibrato: lfoOsc -> lfoGain -> mainOsc.frequency
+    lfoOsc.type = 'sine';
+    lfoOsc.frequency.value = state.vibratoRate;
+    lfoGain.gain.value = state.vibratoOn ? state.vibratoDepth : 0;
+    lfoOsc.connect(lfoGain);
+    lfoGain.connect(mainOsc.frequency);
+
+    // Initial pitch & wave
+    mainOsc.frequency.value = getEffectiveFreq();
+    applyWaveformToOsc();
+
+    // Master gain & analyzer routing
+    masterGain.gain.value = 0;
+    mainOsc.connect(masterGain);
+    masterGain.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    mainOsc.start();
+    lfoOsc.start();
+  }
+
+  // Apply Waveform (including Harmonic Morphing)
+  function applyWaveformToOsc() {
+    if (!mainOsc || !audioCtx) return;
+
+    if (state.morph === 0) {
+      mainOsc.type = state.waveform;
+    } else {
+      // Build custom PeriodicWave based on morph slider
+      const harmonics = 32;
+      const real = new Float32Array(harmonics);
+      const imag = new Float32Array(harmonics);
+
+      const morphRatio = state.morph / 100;
+
+      for (let i = 1; i < harmonics; i++) {
+        let amp = 0;
+        if (state.waveform === 'sine') {
+          amp = (i === 1) ? 1.0 : morphRatio * (0.4 / i);
+        } else if (state.waveform === 'triangle') {
+          if (i % 2 !== 0) amp = 8 / (Math.PI * Math.PI * i * i);
+          amp += morphRatio * (0.3 / i);
+        } else if (state.waveform === 'square') {
+          if (i % 2 !== 0) amp = 4 / (Math.PI * i);
+          amp = amp * (1 - morphRatio * 0.4) + morphRatio * (0.2 / i);
+        } else if (state.waveform === 'sawtooth') {
+          amp = 2 / (Math.PI * i);
+          amp += morphRatio * 0.2 * Math.sin(i);
+        }
+        imag[i] = amp;
+      }
+      const customWave = audioCtx.createPeriodicWave(real, imag);
+      mainOsc.setPeriodicWave(customWave);
+    }
+  }
+
+  // Sync Audio Node Parameters Live
+  function updateAudioParams() {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const totalFreq = getEffectiveFreq();
+
+    mainOsc.frequency.setTargetAtTime(totalFreq, now, 0.02);
+    applyWaveformToOsc();
+
+    lfoOsc.frequency.setTargetAtTime(state.vibratoRate, now, 0.02);
+    const targetDepth = state.vibratoOn ? state.vibratoDepth : 0;
+    lfoGain.gain.setTargetAtTime(targetDepth, now, 0.02);
+
+    const calcVol = (state.isPlaying && !state.isMuted) ? (state.volume / 100) * 0.35 : 0;
+    masterGain.gain.setTargetAtTime(calcVol, now, 0.025);
+  }
+
+  // Update UI Elements
+  function updateUI() {
+    const totalFreq = getEffectiveFreq();
+    
+    // Readouts
+    freqSlider.value = state.frequency;
+    freqTag.textContent = `${state.frequency.toFixed(1)} Hz`;
+    freqBigReadout.textContent = totalFreq.toFixed(1);
+    
+    fineTuneSlider.value = state.fineTune;
+    fineTuneTag.textContent = `${state.fineTune > 0 ? '+' : ''}${state.fineTune.toFixed(1)} Hz`;
+    
+    noteReadout.textContent = getNoteInfo(totalFreq);
+
+    // Waveform
+    waveTag.textContent = state.waveform.toUpperCase();
+    waveButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.wave === state.waveform);
+    });
+    
+    morphSlider.value = state.morph;
+    morphTag.textContent = `${state.morph}%`;
+
+    // Volume & Mute
+    volSlider.value = state.volume;
+    volTag.textContent = `${state.volume}%`;
+    muteIcon.textContent = state.isMuted ? '🔇' : '🔊';
+    muteLabel.textContent = state.isMuted ? 'MUTED' : 'UNMUTED';
+
+    // Vibrato
+    vibratoToggle.classList.toggle('active', state.vibratoOn);
+    vibratoToggle.setAttribute('aria-checked', state.vibratoOn);
+    vibDepthSlider.value = state.vibratoDepth;
+    vibDepthTag.textContent = `${state.vibratoDepth} Hz`;
+    vibRateSlider.value = state.vibratoRate;
+    vibRateTag.textContent = `${state.vibratoRate} Hz`;
+    vibratoStatusReadout.textContent = `Vibrato: ${state.vibratoOn ? `ON (${state.vibratoRate}Hz / ±${state.vibratoDepth}Hz)` : 'OFF'}`;
+
+    // Play state indicator
+    if (state.isPlaying) {
+      playBtn.classList.add('playing');
+      playIcon.textContent = '⏹';
+      playText.textContent = 'STOP THE NOISE';
+      liveStatus.classList.add('active');
+      liveText.textContent = 'SIGNAL LIVE';
+    } else {
+      playBtn.classList.remove('playing');
+      playIcon.textContent = '▶';
+      playText.textContent = 'MAKE SOME NOISE';
+      liveStatus.classList.remove('active');
+      liveText.textContent = 'SILENT MODE';
+    }
+
+    // Active preset chip highlight
+    document.querySelectorAll('.preset-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.id === state.activePreset);
+    });
+
+    updateAudioParams();
+  }
+
+  // Render Preset Buttons
+  function renderPresets() {
+    presetsWrap.innerHTML = '';
+    PRESETS.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = `preset-chip ${state.activePreset === p.id ? 'active' : ''}`;
+      btn.dataset.id = p.id;
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => applyPreset(p));
+      presetsWrap.appendChild(btn);
+    });
+  }
+
+  function applyPreset(p) {
+    state.frequency = p.freq;
+    state.fineTune = 0;
+    state.waveform = p.wave;
+    state.morph = p.morph;
+    state.vibratoOn = p.vib;
+    state.vibratoDepth = p.vibDepth;
+    state.vibratoRate = p.vibRate;
+    state.activePreset = p.id;
+    updateUI();
+  }
+
+  // Oscilloscope Drawing Loop
+  function drawScope() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    
+    if (canvas.width !== w || canvas.height !== h) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // Oscilloscope Screen Background
+    ctx.fillStyle = "#141c1c";
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = "rgba(54, 240, 163, 0.08)";
+    ctx.lineWidth = 1;
+    const step = 32;
+    for (let x = step; x < w; x += step) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = step; y < h; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // Axis line
+    ctx.strokeStyle = "rgba(54, 240, 163, 0.18)";
+    ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+
+    // Waveform rendering
+    ctx.beginPath();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#36f0a3";
+
+    if (state.isPlaying && analyser) {
+      const timeData = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(timeData);
+
+      // Trigger alignment (zero-crossing detection)
+      let offset = 0;
+      for (let i = 0; i < timeData.length - 1; i++) {
+        if (timeData[i] <= 0 && timeData[i + 1] > 0) {
+          offset = i;
+          break;
+        }
+      }
+
+      const drawSamples = Math.min(timeData.length - offset, 512);
+      for (let i = 0; i < drawSamples; i++) {
+        const x = (i / (drawSamples - 1)) * w;
+        const y = (h / 2) - (timeData[offset + i] * h * 0.42);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+    } else {
+      // Idle Preview Mode: Mathematically exact simulation of current state
+      const freq = getEffectiveFreq();
+      const vibDepth = state.vibratoOn ? state.vibratoDepth : 0;
+      const vibRate = state.vibratoRate;
+      const seconds = 0.012;
+      const points = Math.floor(w * 1.5);
+      const amp = h * 0.32;
+
+      for (let i = 0; i < points; i++) {
+        const t = (i / (points - 1)) * seconds;
+        const vibInstant = vibDepth * Math.sin(2 * Math.PI * vibRate * (previewPhase * 0.05 + t));
+        const effFreq = Math.max(20, freq + vibInstant);
+        
+        const p = (2 * Math.PI * effFreq * t + previewPhase) / (2 * Math.PI);
+        const frac = p - Math.floor(p);
+        let v = 0;
+
+        if (state.morph > 0) {
+          v = Math.sin(2 * Math.PI * p);
+          if (state.waveform === 'square' || state.waveform === 'triangle') {
+            v += (state.morph / 100) * 0.35 * Math.sin(6 * Math.PI * p);
+          } else {
+            v += (state.morph / 100) * 0.45 * (frac < 0.5 ? 1 : -1);
+          }
+        } else {
+          if (state.waveform === 'sine') v = Math.sin(2 * Math.PI * p);
+          else if (state.waveform === 'triangle') v = 1 - 4 * Math.abs(frac - 0.5);
+          else if (state.waveform === 'square') v = frac < 0.5 ? 1 : -1;
+          else if (state.waveform === 'sawtooth') v = 2 * frac - 1;
+        }
+
+        const x = (i / (points - 1)) * w;
+        const y = (h / 2) - (v * amp * (state.isMuted ? 0.3 : 0.85));
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      previewPhase += 0.03;
+    }
+
+    ctx.stroke();
+
+    // Glow pass
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "#36f0a3";
+    ctx.stroke();
+    ctx.restore();
+
+    animFrameId = requestAnimationFrame(drawScope);
+  }
+
+  // Event Listeners Initialization
+  function initEvents() {
+    // Play Button
+    playBtn.addEventListener('click', async () => {
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      state.isPlaying = !state.isPlaying;
+      updateUI();
+    });
+
+    // Pitch Sliders
+    freqSlider.addEventListener('input', (e) => {
+      state.frequency = parseFloat(e.target.value);
+      state.activePreset = null;
+      updateUI();
+    });
+
+    fineTuneSlider.addEventListener('input', (e) => {
+      state.fineTune = parseFloat(e.target.value);
+      updateUI();
+    });
+
+    // Nudge Buttons
+    document.querySelectorAll('.nudge-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.nudge;
+        let current = getEffectiveFreq();
+        if (type === '-oct') current /= 2;
+        if (type === '+oct') current *= 2;
+        if (type === '-semi') current /= Math.pow(2, 1/12);
+        if (type === '+semi') current *= Math.pow(2, 1/12);
+
+        state.frequency = Math.max(40, Math.min(1200, current));
+        state.fineTune = 0;
+        state.activePreset = null;
+        updateUI();
+      });
+    });
+
+    // Waveform Buttons
+    waveButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.waveform = btn.dataset.wave;
+        state.activePreset = null;
+        updateUI();
+      });
+    });
+
+    morphSlider.addEventListener('input', (e) => {
+      state.morph = parseInt(e.target.value, 10);
+      updateUI();
+    });
+
+    // Volume & Mute
+    volSlider.addEventListener('input', (e) => {
+      state.volume = parseInt(e.target.value, 10);
+      updateUI();
+    });
+
+    muteToggle.addEventListener('click', () => {
+      state.isMuted = !state.isMuted;
+      updateUI();
+    });
+
+    // Vibrato Controls
+    const toggleVibrato = () => {
+      state.vibratoOn = !state.vibratoOn;
+      state.activePreset = null;
+      updateUI();
+    };
+
+    vibratoToggle.addEventListener('click', toggleVibrato);
+    vibratoToggle.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        toggleVibrato();
+      }
+    });
+
+    vibDepthSlider.addEventListener('input', (e) => {
+      state.vibratoDepth = parseInt(e.target.value, 10);
+      updateUI();
+    });
+
+    vibRateSlider.addEventListener('input', (e) => {
+      state.vibratoRate = parseFloat(e.target.value);
+      updateUI();
+    });
+
+    // Surprise Me / Randomize Button
+    randomBtn.addEventListener('click', () => {
+      initAudio();
+      state.frequency = Math.floor(45 + Math.random() * 1100);
+      state.fineTune = parseFloat((Math.random() * 6 - 3).toFixed(1));
+      const waves = ['sine', 'triangle', 'square', 'sawtooth'];
+      state.waveform = waves[Math.floor(Math.random() * waves.length)];
+      state.morph = Math.random() > 0.6 ? Math.floor(Math.random() * 60) : 0;
+      state.vibratoOn = Math.random() > 0.4;
+      state.vibratoDepth = Math.floor(Math.random() * 35);
+      state.vibratoRate = parseFloat((1 + Math.random() * 12).toFixed(1));
+      state.activePreset = null;
+      updateUI();
+    });
+
+    // Reset Button
+    resetBtn.addEventListener('click', () => {
+      state.frequency = 220;
+      state.fineTune = 0;
+      state.waveform = 'sine';
+      state.morph = 0;
+      state.volume = 50;
+      state.isMuted = false;
+      state.vibratoOn = false;
+      state.vibratoDepth = 8;
+      state.vibratoRate = 5;
+      state.activePreset = 'cozy';
+      updateUI();
+    });
+  }
+
+  // App Initialization
+  renderPresets();
+  initEvents();
+  updateUI();
+  drawScope();
+
+})();
+</script>
+</body>
+</html>
