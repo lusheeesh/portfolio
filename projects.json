@@ -40,5 +40,11 @@
     "description": "You get 10 seconds and one prompt. A sarcastic AI judges how badly you drew.",
     "url": "https://10secdraw.vercel.app/",
     "stack": "HTML · CSS · JS · OpenRouter · Vercel"
+  },
+  {
+    "name": "Wavey",
+    "description": "A tiny sound laboratory with a real-time oscilloscope visualizer.",
+    "url": "https://alphabet.is-cool.dev/wavey",
+    "stack": "HTML · CSS · JS · Web Audio API"
   }
 ]
