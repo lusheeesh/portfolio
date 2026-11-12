@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#05060c" />
+<title>balala.com — petualangan di diagram cartesius</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
+  body{
+    background:#05060c;color:#e8ecff;
+    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;
+    user-select:none;-webkit-user-select:none;
+    position:fixed;inset:0;touch-action:none;
+  }
+  .app{position:fixed;inset:0;height:100dvh;display:flex;flex-direction:column}
+
+  header{
+    display:flex;align-items:center;gap:10px;
+    padding:calc(8px + env(safe-area-inset-top)) 12px 8px;
+    flex:0 0 auto;z-index:10;
+  }
+  .logo{font-size:17px;font-weight:900;letter-spacing:-.7px;white-space:nowrap;color:#e8ecff}
+  .logo span{color:#4de2ff;text-shadow:0 0 12px rgba(77,226,255,.6)}
+
+  .meterbox{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;transition:opacity .4s}
+  .meterlabel{
+    display:flex;justify-content:space-between;
+    font-size:9px;font-weight:900;letter-spacing:1.6px;color:#7d8db8;
+  }
+  .meterlabel b{color:#ffd166;transition:color .3s}
+  .meterlabel b.hot{color:#ff2d55;text-shadow:0 0 10px rgba(255,45,85,.8)}
+  .meter{
+    position:relative;height:12px;border-radius:99px;overflow:hidden;
+    background:#121728;border:1px solid rgba(120,170,255,.22);
+  }
+  .meter-fill{
+    position:absolute;top:0;left:0;bottom:0;width:0%;
+    background:linear-gradient(90deg,#4de2ff,#8b7bff 50%,#ff2d55);
+    border-radius:99px;
+    transition:width .55s cubic-bezier(.2,.9,.3,1.35);
+    box-shadow:0 0 12px rgba(255,45,85,.5);
+  }
+  .meter.hot .meter-fill{animation:meterPulse .55s ease-in-out infinite}
+  @keyframes meterPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.7)}}
+
+  .stage{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
+  .stage.shaking{animation:shake .32s ease-out}
+  @keyframes shake{
+    0%,100%{transform:translate(0,0)}
+    10%{transform:translate(-5px,3px)}
+    20%{transform:translate(5px,-3px)}
+    30%{transform:translate(-4px,-4px)}
+    40%{transform:translate(4px,4px)}
+    50%{transform:translate(-3px,2px)}
+    60%{transform:translate(3px,-2px)}
+    70%{transform:translate(-2px,3px)}
+    80%{transform:translate(2px,-3px)}
+    90%{transform:translate(-1px,-1px)}
+  }
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+  .chips{
+    position:absolute;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+    display:flex;gap:5px;z-index:6;pointer-events:none;transition:opacity .4s;
+  }
+  .chip{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    font-size:15px;background:rgba(19,24,41,.85);
+    border:1px solid rgba(120,170,255,.15);
+    opacity:.22;filter:grayscale(1);
+    transition:all .32s cubic-bezier(.2,.9,.3,1.5);
+  }
+  .chip.on{
+    opacity:1;filter:none;border-color:rgba(255,209,102,.7);
+    box-shadow:0 0 14px rgba(255,209,102,.55);
+    transform:scale(1.12) rotate(-4deg);
+  }
+
+  .caption{
+    position:absolute;left:0;right:0;
+    top:14%;padding:0 22px;
+    text-align:center;font-size:15px;line-height:1.6;
+    color:#dbe4ff;font-weight:600;
+    text-shadow:0 2px 12px rgba(0,0,0,.95),0 0 30px rgba(0,0,0,.85);
+    opacity:0;transition:opacity .6s;
+    pointer-events:none;z-index:10;
+  }
+  .caption.show{opacity:1}
+  .caption .censored{
+    background:#0a0e1a;color:#4de2ff;
+    border-radius:3px;padding:0 3px;letter-spacing:1px;
+    box-shadow:0 0 10px rgba(77,226,255,.25);
+  }
+
+  .skip{
+    position:absolute;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));
+    font-size:9px;color:rgba(122,138,180,.7);
+    letter-spacing:1.6px;text-transform:uppercase;font-weight:800;
+    padding:6px 12px;border-radius:99px;
+    background:rgba(19,24,41,.7);
+    border:1px solid rgba(120,170,255,.15);
+    opacity:0;transition:opacity .4s;
+    pointer-events:none;z-index:10;
+  }
+  .skip.show{opacity:1}
+
+  .hint{
+    position:absolute;left:50%;bottom:calc(58px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);
+    font-size:10px;color:rgba(180,200,240,.8);
+    letter-spacing:1.5px;text-transform:uppercase;font-weight:700;
+    padding:7px 14px;border-radius:99px;
+    background:rgba(19,24,41,.85);
+    border:1px solid rgba(120,170,255,.2);
+    opacity:0;transition:opacity .5s;
+    pointer-events:none;z-index:8;
+    white-space:nowrap;
+  }
+  .hint.show{opacity:1}
+
+  .story-tap{position:fixed;inset:0;z-index:45;display:none}
+  .story-tap.on{display:block}
+
+  .dialogue{
+    position:fixed;left:8px;right:8px;
+    bottom:calc(8px + env(safe-area-inset-bottom));
+    max-width:640px;margin:0 auto;
+    background:rgba(10,14,26,.96);
+    border:1.5px solid var(--speaker-color,#4de2ff);
+    border-radius:18px;padding:12px 14px 18px;
+    display:flex;gap:12px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 40px rgba(77,226,255,.08);
+    transform:translateY(calc(100% + 30px));
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.3);
+    z-index:50;pointer-events:none;
+  }
+  .dialogue.show{transform:translateY(0);pointer-events:auto}
+  .dlg-portrait{
+    width:52px;height:52px;border-radius:50%;
+    background:rgba(255,255,255,.05);
+    border:2px solid var(--speaker-color,#4de2ff);
+    display:grid;place-items:center;font-size:26px;flex:0 0 auto;
+    box-shadow:0 0 20px var(--speaker-color,#4de2ff);
+    transition:border-color .25s,box-shadow .25s;
+  }
+  .dlg-content{flex:1;min-width:0}
+  .dlg-speaker{
+    font-size:10px;font-weight:900;letter-spacing:1.8px;
+    text-transform:uppercase;color:var(--speaker-color,#4de2ff);
+    margin-bottom:3px;transition:color .25s;
+  }
+  .dlg-speaker.revealed{
+    color:#4de2ff;
+    text-shadow:0 0 14px rgba(77,226,255,.9),0 0 30px rgba(77,226,255,.5);
+    animation:nameReveal 1.6s ease-out;
+  }
+  @keyframes nameReveal{
+    0%{letter-spacing:8px;opacity:.2}
+    50%{letter-spacing:4px;opacity:1}
+    100%{letter-spacing:1.8px}
+  }
+  .dlg-text{
+    font-size:14px;line-height:1.52;color:#dbe4ff;
+    min-height:42px;
+  }
+  .dlg-advance{
+    position:absolute;right:14px;bottom:6px;
+    font-size:11px;color:#4de2ff;font-weight:700;
+    animation:bobDown 1s ease-in-out infinite;
+  }
+  @keyframes bobDown{
+    0%,100%{transform:translateY(0);opacity:.4}
+    50%{transform:translateY(3px);opacity:1}
+  }
+
+  .screen{
+    position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:18px;
+    background:rgba(5,7,14,.94);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .screen.hidden{display:none}
+
+  .intro-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+  .intro-float{
+    position:absolute;color:rgba(77,226,255,.06);
+    font-weight:900;white-space:nowrap;
+    animation:floatUp linear infinite;pointer-events:none;
+  }
+  @keyframes floatUp{
+    from{transform:translateY(40vh) rotate(-6deg);opacity:0}
+    15%{opacity:1}
+    85%{opacity:1}
+    to{transform:translateY(-110vh) rotate(6deg);opacity:0}
+  }
+
+  .intro-card{
+    position:relative;width:min(400px,100%);text-align:center;
+    background:linear-gradient(180deg,rgba(21,27,48,.96),rgba(12,17,32,.98));
+    border:1px solid rgba(120,170,255,.26);
+    border-radius:22px;padding:26px 20px;
+    box-shadow:0 26px 70px rgba(0,0,0,.8),inset 0 0 60px rgba(77,226,255,.03);
+    animation:cardIn .4s cubic-bezier(.2,.9,.3,1.4);
+  }
+  @keyframes cardIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+
+  .intro-eyebrow{
+    font-size:9px;font-weight:900;letter-spacing:2.6px;
+    color:#ff5fa2;margin-bottom:10px;
+  }
+  .intro-title{
+    margin:0 0 4px;font-size:clamp(32px,9vw,44px);
+    letter-spacing:-2px;font-weight:900;line-height:1;
+    color:#e8ecff;
+  }
+  .intro-title span{
+    color:#4de2ff;
+    text-shadow:0 0 22px rgba(77,226,255,.7);
+    animation:titleGlitch 4s infinite;
+  }
+  @keyframes titleGlitch{
+    0%,92%,100%{text-shadow:0 0 22px rgba(77,226,255,.7)}
+    93%{text-shadow:-3px 0 #ff2d55,3px 0 #4de2ff,0 0 22px rgba(77,226,255,.7)}
+    95%{text-shadow:3px 0 #ff2d55,-3px 0 #4de2ff,0 0 22px rgba(77,226,255,.7)}
+  }
+  .intro-sub{
+    font-size:11px;font-weight:700;letter-spacing:1.4px;
+    color:#7d8db8;text-transform:lowercase;margin-bottom:16px;
+  }
+  .intro-desc{
+    font-size:13.5px;line-height:1.62;color:#b9c6ea;
+    margin:0 0 10px;
+  }
+  .intro-desc .censored{
+    background:#0a0e1a;color:#4de2ff;
+    border-radius:3px;padding:0 4px;font-weight:800;
+    box-shadow:0 0 8px rgba(77,226,255,.25);
+  }
+  .intro-hint{
+    font-size:11px;color:#5b6a92;line-height:1.5;
+    margin:0 0 4px;font-style:italic;
+  }
+
+  .btn-primary{
+    width:100%;margin-top:20px;padding:16px;border:none;border-radius:16px;
+    font-family:inherit;font-size:17px;font-weight:900;letter-spacing:.8px;
+    color:#04121b;background:linear-gradient(180deg,#5ce6ff,#22a8dd);
+    box-shadow:0 10px 26px rgba(77,226,255,.38);cursor:pointer;
+    transition:transform .1s,box-shadow .15s;
+  }
+  .btn-primary:hover{box-shadow:0 14px 34px rgba(77,226,255,.55)}
+  .btn-primary:active{transform:scale(.96)}
+
+  #doomScreen{position:fixed;inset:0;z-index:80;background:#03040a;overflow:hidden}
+  #doomScreen.hidden{display:none}
+  #doomScreen.shaking{animation:shake .45s ease-out}
+
+  .vignette{
+    position:absolute;inset:-10%;
+    background:radial-gradient(circle at 50% 50%,rgba(255,0,60,0) 14%,rgba(150,0,28,.6) 58%,rgba(0,0,0,1) 100%);
+    animation:breath 2.2s ease-in-out infinite;z-index:1;
+  }
+  @keyframes breath{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+
+  .scanlines{
+    position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:repeating-linear-gradient(0deg,
+      rgba(0,0,0,.18) 0px,rgba(0,0,0,.18) 1px,
+      transparent 1px,transparent 3px);
+  }
+
+  .doom-title{
+    position:absolute;inset:0;z-index:2;
+    display:none;place-items:center;text-align:center;
+    font-weight:900;letter-spacing:-2px;padding:0 16px;line-height:1;
+  }
+  .doom-title.phase1{
+    display:grid;
+    font-size:clamp(22px,7.5vw,44px);color:#ff2d55;
+    text-shadow:0 0 20px #ff0033,0 0 70px #7a0018;
+    animation:glitch1 .14s infinite;
+  }
+  .doom-title.phase2{
+    display:grid;
+    font-size:clamp(52px,20vw,180px);color:#ff1744;
+    text-shadow:4px 0 #00e5ff,-4px 0 #ff0088,0 0 40px #ff0033,0 0 100px #7a0018;
+    animation:glitch2 .1s infinite;letter-spacing:-4px;
+  }
+  @keyframes glitch1{
+    0%,100%{transform:translate(0,0)}
+    25%{transform:translate(-2px,1px)}
+    50%{transform:translate(2px,-1px)}
+    75%{transform:translate(-1px,-2px)}
+  }
+  @keyframes glitch2{
+    0%,100%{transform:translate(0,0) scale(1)}
+    20%{transform:translate(-5px,2px) scale(1.02)}
+    40%{transform:translate(5px,-2px) scale(.98)}
+    60%{transform:translate(-3px,-4px) scale(1.01)}
+    80%{transform:translate(3px,4px) scale(.99)}
+  }
+
+  #spamLayer{position:absolute;inset:0;z-index:4;overflow:hidden}
+  .spam-word{
+    position:absolute;font-weight:900;white-space:nowrap;
+    opacity:0;transform:scale(.4) rotate(var(--rot,0deg));
+    animation:spamPop .4s cubic-bezier(.2,.9,.3,1.7) forwards;
+    will-change:transform,opacity;
+    text-shadow:0 0 8px currentColor;
+  }
+  @keyframes spamPop{to{opacity:1;transform:scale(1) rotate(var(--rot,0deg))}}
+
+  #ending{
+    position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:18px;
+    background:rgba(3,4,10,.85);opacity:0;pointer-events:none;
+    transition:opacity .8s;
+  }
+  #ending.show{opacity:1;pointer-events:auto}
+
+  .endcard{
+    width:min(400px,100%);text-align:center;
+    background:linear-gradient(180deg,#1a1030,#0a0512);
+    border:1px solid rgba(255,45,85,.45);
+    border-radius:22px;padding:26px 20px;
+    box-shadow:0 0 70px rgba(255,45,85,.3),0 26px 70px rgba(0,0,0,.85);
+    animation:cardIn .5s cubic-bezier(.2,.9,.3,1.3);
+  }
+  .end-eyebrow{
+    font-size:9px;font-weight:900;letter-spacing:2.6px;
+    color:#ff5fa2;margin-bottom:8px;
+  }
+  .end-title{
+    margin:0 0 12px;font-size:clamp(26px,8vw,36px);
+    letter-spacing:-1.5px;color:#ff2d55;
+    text-shadow:0 0 22px rgba(255,45,85,.85);
+  }
+  .end-text{
+    font-size:13.5px;line-height:1.6;color:#c9b6d8;margin:0 0 8px;
+  }
+  .end-notif{
+    background:rgba(77,226,255,.06);
+    border:1px solid rgba(77,226,255,.3);
+    border-radius:12px;padding:12px 14px;
+    font-size:12.5px;color:#9fd9ff;text-align:left;
+    margin:14px 0 0;line-height:1.5;
+    animation:notifPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes notifPulse{
+    0%,100%{box-shadow:0 0 0 rgba(77,226,255,0)}
+    50%{box-shadow:0 0 22px rgba(77,226,255,.35)}
+  }
+
+  .flash{
+    position:fixed;inset:0;background:#fff;opacity:0;
+    pointer-events:none;z-index:65;
+  }
+  .flash.on{animation:flashOut .42s ease-out}
+  @keyframes flashOut{0%{opacity:.75}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">balala<span>.com</span></div>
+    <div class="meterbox" id="meterbox">
+      <div class="meterlabel"><span>METER BALALA</span><b id="meterPct">0%</b></div>
+      <div class="meter" id="meterEl">
+        <div class="meter-fill" id="meterFill"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="game"></canvas>
+    <div class="chips" id="chips"></div>
+    <div class="caption" id="caption"></div>
+    <div class="skip" id="skip">tap untuk lewati</div>
+    <div class="hint" id="hint">geser layar untuk jalan</div>
+  </main>
+</div>
+
+<div class="story-tap" id="storyTap"></div>
+
+<div class="dialogue" id="dialogue">
+  <div class="dlg-portrait" id="dlgPortrait">👨‍🏫</div>
+  <div class="dlg-content">
+    <div class="dlg-speaker" id="dlgSpeaker">PAK GURU</div>
+    <div class="dlg-text" id="dlgText"></div>
+  </div>
+  <div class="dlg-advance">▼ tap</div>
+</div>
+
+<div class="screen" id="introScreen">
+  <div class="intro-bg" id="introBg"></div>
+  <div class="intro-card">
+    <div class="intro-eyebrow">JAM KE-7 · MATEMATIKA</div>
+    <h1 class="intro-title">balala<span>.com</span></h1>
+    <div class="intro-sub">petualangan di diagram cartesius</div>
+    <p class="intro-desc">Kamu ketiduran di kelas Pak <span class="censored">I███S</span>. Bangun-bangun, kelas kosong dan lantai sudah berubah jadi diagram Cartesius. Lima snack berserakan. Cari semuanya sebelum meter balala penuh.</p>
+    <p class="intro-hint">geser layar untuk jalan · tap snack untuk makan</p>
+    <button class="btn-primary" id="startBtn">MULAI</button>
+  </div>
+</div>
+
+<div id="doomScreen" class="hidden">
+  <div class="vignette"></div>
+  <div class="doom-title" id="doomTitle"></div>
+  <div class="scanlines"></div>
+  <div id="spamLayer"></div>
+  <div id="ending">
+    <div class="endcard">
+      <div class="end-eyebrow">EPILOG</div>
+      <h2 class="end-title">KAMU BANGUN.</h2>
+      <p class="end-text">Di kelas. Pelajaran matematika masih berjalan. Pak Ilyas masih menjelaskan nomor 5.</p>
+      <p class="end-text">Kamu raih HP. Ada notifikasi.</p>
+      <div class="end-notif">📱 <b>balala.com</b> mengirim pesan:<br>"Sampai jumpa."</div>
+      <button class="btn-primary" id="againBtn">ULANGI MIMPI</button>
+    </div>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STORY DATA — nama guru disensor jadi "I███S" (seperti ILYAS)
+   ============================================================ */
+const STORY_INTRO = [
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kamu buka mata.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kelas... hilang. Kursi hilang. Papan tulis hilang.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Yang tersisa cuma lantai biru gelap. Garis-garis menyala. Angka di mana-mana.' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Ini... diagram Cartesius?' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Di kejauhan, lima snack berserakan. Semuanya menyala pelan.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kamu akhirnya bangun.' },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'PAK?! Pak, ini di mana?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Di tempat yang nggak seharusnya kamu datangi.' },
+  { speaker:'KAMU',      emoji:'😰', color:'#4de2ff', text:'Pak, aku takut...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Dengar baik-baik. Ada lima snack di lantai.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kamu harus makan semuanya.' },
+  { speaker:'KAMU',      emoji:'😳', color:'#4de2ff', text:'Makan... snack? Terus?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Terus kamu pulang. Itu satu-satunya jalan.' },
+  { speaker:'KAMU',      emoji:'😰', color:'#4de2ff', text:'Kalau aku nggak makan?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Jangan tanya.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kamu berdiri. Diagram Cartesius bergerak di bawah kakimu.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Geser layar untuk jalan. Sentuh snack untuk makan.' }
+];
+
+const STORY_TAIKO = [
+  { speaker:'KAMU',      emoji:'🤔', color:'#4de2ff', text:'Taiko. Di titik (3, 3). Kenapa ada Taiko di sini?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Jangan makan itu.' },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'Siapa?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku.' },
+  { speaker:'KAMU',      emoji:'😰', color:'#4de2ff', text:'Pak?! Kok suaranya dari mana-mana?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku... ada di sini. Tapi nggak sepenuhnya.' },
+  { speaker:'KAMU',      emoji:'🤨', color:'#4de2ff', text:'Maksudnya gimana?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Dulu aku jualan Taiko di depan gerbang sekolah. Sebelum jadi guru.' },
+  { speaker:'KAMU',      emoji:'😲', color:'#4de2ff', text:'Serius?! Pak jualan Taiko?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Iya. Rasanya... kenangan itu yang bikin snack ini muncul di sini.' },
+  { speaker:'KAMU',      emoji:'🤔', color:'#4de2ff', text:'Jadi semua ini kenangan Pak?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Sebagian. Makan aja. Biar kamu ngerti.' },
+  { speaker:'KAMU',      emoji:'😅', color:'#4de2ff', text:'Pak, nama Pak siapa ya? Aku lupa...' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kamu ingat namanya. Tapi huruf-hurufnya nggak mau keluar.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Nggak usah. Namaku nggak penting sekarang.' }
+];
+
+const STORY_MIE = [
+  { speaker:'KAMU',      emoji:'😋', color:'#4de2ff', text:'Mie Aceh! Masih anget!' },
+  { speaker:'KAMU',      emoji:'🤨', color:'#4de2ff', text:'Siapa yang naruh ini di titik minus tiga?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kamu pernah bawa Mie Aceh ke kelasku.' },
+  { speaker:'KAMU',      emoji:'😅', color:'#4de2ff', text:'Hehe... iya Pak. Maaf.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Bau satu ruangan. Anak-anak pada nengok ke belakang.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku sampai harus buka jendela. Padahal AC-nya mati.' },
+  { speaker:'KAMU',      emoji:'😅', color:'#4de2ff', text:'Aku udah minta maaf kan Pak...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku marah bukan karena baunya.' },
+  { speaker:'KAMU',      emoji:'😳', color:'#4de2ff', text:'Terus kenapa?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku marah karena kamu nggak nawarin ke aku.' },
+  { speaker:'KAMU',      emoji:'😭', color:'#4de2ff', text:'PAK GURU...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Sekarang kamu makan. Anggap aja ini... permintaan maafku.' },
+  { speaker:'KAMU',      emoji:'🤔', color:'#4de2ff', text:'Pak, kenapa semua kenangannya jadi makanan?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Karena balala.com makan kenangan. Dia lapar.' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Lapar?' }
+];
+
+const STORY_CIRENG = [
+  { speaker:'KAMU',      emoji:'😲', color:'#4de2ff', text:'Cireng. Masih kriuk. Aneh banget.' },
+  { speaker:'KAMU',      emoji:'🤔', color:'#4de2ff', text:'Padahal udah berapa lama aku di sini...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Cireng itu bentuknya nggak beraturan.' },
+  { speaker:'KAMU',      emoji:'😑', color:'#4de2ff', text:'Pak, jangan mulai...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kayak nilai ulanganmu. Nggak beraturan.' },
+  { speaker:'KAMU',      emoji:'😤', color:'#4de2ff', text:'PAK.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Tapi rasanya tetap enak kan?' },
+  { speaker:'KAMU',      emoji:'😌', color:'#4de2ff', text:'...Iya Pak. Enak.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kayak kamu. Nilainya jelek, tapi tetap muridku.' },
+  { speaker:'KAMU',      emoji:'🥹', color:'#4de2ff', text:'Pak...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku pernah nyuruh kamu remedial tiga kali.' },
+  { speaker:'KAMU',      emoji:'😅', color:'#4de2ff', text:'Empat kali, Pak.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'...Empat kali.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Dan kamu tetap datang. Itu yang aku inget.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kamu ngerasa ada yang aneh. Suara Pak Guru makin lama makin... jauh.' }
+];
+
+const STORY_BAKSO = [
+  { speaker:'KAMU',      emoji:'😯', color:'#4de2ff', text:'Bakso. Kuahnya masih ngepul.' },
+  { speaker:'KAMU',      emoji:'🤨', color:'#4de2ff', text:'Ini pasti bukan bakso biasa.' },
+  { speaker:'SUARA',     emoji:'🔊', color:'#ff5fa2', text:'BALALA...' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Suara apa itu?! Dari bawah lantai!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Jangan dengerin. Cepat makan.' },
+  { speaker:'KAMU',      emoji:'😰', color:'#4de2ff', text:'Pak, suaranya makin deket...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'balala.com. Aku bikin website itu tahun 2009.' },
+  { speaker:'KAMU',      emoji:'😳', color:'#4de2ff', text:'Website apa?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Website les matematika online. Gratis. Buat murid-muridku.' },
+  { speaker:'KAMU',      emoji:'🤔', color:'#4de2ff', text:'Terus kenapa jadi... ini?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Karena websitenya... hidup. Dia mulai manggil aku.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Awalnya cuma notifikasi. "Pak, murid baru nih." "Pak, soal nomor 5 kurang jelas."' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Lama-lama dia nggak mau mati. Aku coba hapus domainnya. Dia balik lagi.' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Terus?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Terus dia manggil aku ke sini. Aku nggak bisa keluar.' },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'JADI PAK UDAH LAMA DI SINI?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Entah. Di sini nggak ada waktu.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Namaku... Il—' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Suaranya terputus.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Pokoknya, sekarang dia mau manggil kamu juga.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Cepat makan Bakso itu. Sebelum dia selesai manggil.' }
+];
+
+const STORY_MIKAKO = [
+  { speaker:'KAMU',      emoji:'😌', color:'#4de2ff', text:'Mikako. Snack terakhir.' },
+  { speaker:'KAMU',      emoji:'🤨', color:'#4de2ff', text:'Biskuit coklat kesukaanku. Tapi... kenapa ada di titik nol?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'JANGAN.' },
+  { speaker:'KAMU',      emoji:'😳', color:'#4de2ff', text:'Kenapa?! Ini cuma biskuit!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Itu bukan Mikako.' },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'Terus itu apa?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Itu balala.com. Dia nyamar jadi snack.' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Kok bisa?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Dia belajar. Dia lihat semua kenangan yang kamu makan.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Sekarang dia tau bentuk apa yang paling kamu suka.' },
+  { speaker:'KAMU',      emoji:'😰', color:'#4de2ff', text:'Jadi empat snack sebelumnya...' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Itu beneran. Tapi yang ini jebakan.' },
+  { speaker:'KAMU',      emoji:'😨', color:'#4de2ff', text:'Kalau aku makan, kenapa?' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Meter balala penuh. Dia keluar.' },
+  { speaker:'KAMU',      emoji:'😤', color:'#4de2ff', text:'Terus aku gimana?! Nggak makan, aku kelaparan di sini!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Kamu mau pulang nggak?' },
+  { speaker:'KAMU',      emoji:'😤', color:'#4de2ff', text:'MAU!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Ya sudah. Makan.' },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'PAK?!' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Aku udah nggak bisa pulang. Tapi kamu masih bisa.' },
+  { speaker:'PAK I███S', emoji:'👨‍🏫', color:'#ffd166', text:'Namaku monster mbg. Kamu harus ingat itu.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Kamu raih Mikako. Tanggung jawab.' }
+];
+
+const STORY_FINAL = [
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Meter balala: 100%.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Lantai bergetar. Diagram Cartesius menyala merah.' },
+  { speaker:'PAK ILYAS', emoji:'👨‍🏫', color:'#4de2ff', text:'Kamu udah makan semuanya. Sekarang dia bangun.', revealed:true },
+  { speaker:'KAMU',      emoji:'😱', color:'#4de2ff', text:'PAK! AKU HARUS GIMANA?!' },
+  { speaker:'PAK ILYAS', emoji:'👨‍🏫', color:'#4de2ff', text:'Kamu nggak bisa apa-apa.', revealed:true },
+  { speaker:'PAK ILYAS', emoji:'👨‍🏫', color:'#4de2ff', text:'Tapi kamu bisa lari.', revealed:true },
+  { speaker:'KAMU',      emoji:'🏃', color:'#4de2ff', text:'LARI KE MANA?! PINTU AJA KEKUNCI!' },
+  { speaker:'SUARA',     emoji:'🔊', color:'#ff5fa2', text:'BALALA...' },
+  { speaker:'SUARA',     emoji:'🔊', color:'#ff5fa2', text:'BALALA.COM...' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Layar jadi putih. Angka dan huruf berjatuhan dari langit.' },
+  { speaker:'SUARA',     emoji:'🔊', color:'#ff5fa2', text:'SELAMAT DATANG DI BALALA.COM.' },
+  { speaker:'NARASI',    emoji:'📖', color:'#7d8db8', text:'Sebelum semuanya putih, kamu dengar satu suara lagi.' },
+  { speaker:'PAK ILYAS', emoji:'👨‍🏫', color:'#4de2ff', text:'Bangun.', revealed:true }
+];
+
+/* ============================================================
+   SNACKS — semua di dalam area pandang
+   ============================================================ */
+const FOODS = [
+  { id:'taiko',   name:'Taiko',    emoji:'🍡', x: 3.0, y: 3.2, taken:false, story:STORY_TAIKO },
+  { id:'mieaceh', name:'Mie Aceh', emoji:'🍜', x:-3.5, y: 2.0, taken:false, story:STORY_MIE },
+  { id:'cireng',  name:'Cireng',   emoji:'🥟', x: 3.2, y:-2.8, taken:false, story:STORY_CIRENG },
+  { id:'bakso',   name:'Bakso',    emoji:'🍲', x:-3.0, y:-3.0, taken:false, story:STORY_BAKSO },
+  { id:'mikako',  name:'Mikako',   emoji:'🍪', x: 0.0, y: 3.8, taken:false, story:STORY_MIKAKO }
+];
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const stageEl    = document.getElementById('stage');
+const canvas     = document.getElementById('game');
+const ctx        = canvas.getContext('2d');
+const chipsEl    = document.getElementById('chips');
+const meterbox   = document.getElementById('meterbox');
+const meterEl    = document.getElementById('meterEl');
+const meterFill  = document.getElementById('meterFill');
+const meterPct   = document.getElementById('meterPct');
+const captionEl  = document.getElementById('caption');
+const skipEl     = document.getElementById('skip');
+const hintEl     = document.getElementById('hint');
+const dialogueEl = document.getElementById('dialogue');
+const dlgPortrait= document.getElementById('dlgPortrait');
+const dlgSpeaker = document.getElementById('dlgSpeaker');
+const dlgText    = document.getElementById('dlgText');
+const storyTap   = document.getElementById('storyTap');
+const introScreen= document.getElementById('introScreen');
+const introBg    = document.getElementById('introBg');
+const startBtn   = document.getElementById('startBtn');
+const doomScreen = document.getElementById('doomScreen');
+const doomTitle  = document.getElementById('doomTitle');
+const spamLayer  = document.getElementById('spamLayer');
+const endingEl   = document.getElementById('ending');
+const againBtn   = document.getElementById('againBtn');
+const flashEl    = document.getElementById('flash');
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const UNITS  = 13;
+const SPEED  = 5.2;
+const PICK_R = 1.05;
+
+let W=0, H=0, scale=30, cx=0, cy=0;
+let t = 0, last = 0;
+let meter = 0;
+let state = 'title';   // title | cutscene | wake | story | play | doom | end
+let doomRunId = 0;
+let wakeT = 0;
+
+const player = { x:0, y:-3.5, face:1, bob:0, moving:false };
+const keys = { up:false, down:false, left:false, right:false };
+const particles = [];
+const trails = [];
+
+const cut = {
+  t: 0,
+  total: 15.0,
+  captions: [
+    { start: 0.5,  end: 3.6,  text: 'Jam ke-7. Pelajaran matematika.' },
+    { start: 4.0,  end: 7.2,  text: 'Pak <span class="censored">I███S</span> menjelaskan nomor 5.' },
+    { start: 7.6,  end: 9.6,  text: 'Kamu tidak mendengarkan.' },
+    { start: 10.0, end: 12.5, text: 'Mata kamu mulai berat...' },
+    { start: 12.8, end: 14.6, text: 'Sangat berat...' }
+  ]
+};
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+let actx = null;
+function audio(){
+  if (!actx){
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type, vol, slideTo, delay){
+  const a = audio(); if (!a) return;
+  try{
+    const startAt = a.currentTime + (delay || 0);
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, startAt);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, startAt + dur);
+    g.gain.setValueAtTime(0.0001, startAt);
+    g.gain.exponentialRampToValueAtTime(vol || 0.06, startAt + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(startAt); o.stop(startAt + dur + 0.05);
+  }catch(e){}
+}
+const sfx = {
+  pick(){ tone(880, 0.08, 'triangle', 0.09); tone(1320, 0.12, 'triangle', 0.07, null, 0.06); },
+  tick(){ tone(90 + Math.random()*80, 0.03, 'square', 0.02); },
+  boom(){ tone(80, 1.3, 'sawtooth', 0.13, 35); },
+  glitch(){ for (let i=0;i<8;i++) tone(200 + Math.random()*900, 0.05, 'square', 0.05, null, i*0.05); },
+  heartbeat(n){ for (let i=0;i<n;i++){ tone(55, 0.15, 'sine', 0.18, null, i*0.85); tone(48, 0.2, 'sine', 0.14, null, i*0.85+0.18); } },
+  start(){ tone(520, 0.1, 'triangle', 0.06); tone(780, 0.14, 'triangle', 0.06, null, 0.09); },
+  wake(){ tone(220, 0.35, 'sine', 0.05, 440); tone(440, 0.55, 'sine', 0.04, 880, 0.25); }
+};
+
+/* ============================================================
+   DIALOGUE
+   ============================================================ */
+const Dialogue = {
+  queue: [],
+  active: null,
+  full: '',
+  revealed: 0,
+  timer: null,
+  onDone: null,
+
+  start(lines, onDone){
+    this.queue = lines.slice();
+    this.onDone = onDone || null;
+    this.next();
+  },
+
+  next(){
+    clearInterval(this.timer);
+    if (!this.queue.length){ this.close(); return; }
+
+    const line = this.queue.shift();
+    this.active = line;
+    this.full = line.text;
+    this.revealed = 0;
+
+    dialogueEl.style.setProperty('--speaker-color', line.color);
+    dlgPortrait.textContent = line.emoji;
+    dlgSpeaker.textContent = line.speaker;
+    dlgSpeaker.classList.toggle('revealed', !!line.revealed);
+    dlgText.textContent = '';
+
+    dialogueEl.classList.add('show');
+    storyTap.classList.add('on');
+
+    let i = 0;
+    this.timer = setInterval(() => {
+      i++;
+      this.revealed = i;
+      dlgText.textContent = this.full.slice(0, i);
+      if (i >= this.full.length) clearInterval(this.timer);
+    }, 20);
+  },
+
+  advance(){
+    if (!this.active) return;
+    if (this.revealed < this.full.length){
+      clearInterval(this.timer);
+      this.revealed = this.full.length;
+      dlgText.textContent = this.full;
+    } else {
+      this.next();
+    }
+    tone(600, 0.03, 'square', 0.015);
+  },
+
+  close(){
+    clearInterval(this.timer);
+    this.active = null;
+    dialogueEl.classList.remove('show');
+    storyTap.classList.remove('on');
+    const cb = this.onDone;
+    this.onDone = null;
+    if (cb) setTimeout(cb, 240);
+  }
+};
+
+storyTap.addEventListener('pointerdown', e => { e.preventDefault(); Dialogue.advance(); });
+window.addEventListener('keydown', e => {
+  if ((e.key === ' ' || e.key === 'Enter') && (state === 'story')){
+    e.preventDefault();
+    Dialogue.advance();
+  }
+});
+
+/* ============================================================
+   CANVAS RESIZE
+   ============================================================ */
+function resize(){
+  const r = stageEl.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = r.width; H = r.height;
+  scale = Math.min(W, H) / UNITS;
+  cx = W/2; cy = H/2;
+}
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stageEl);
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
+
+/* ============================================================
+   HUD
+   ============================================================ */
+function buildChips(){
+  chipsEl.innerHTML = '';
+  FOODS.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'chip';
+    d.dataset.id = f.id;
+    d.textContent = f.emoji;
+    chipsEl.appendChild(d);
+  });
+}
+function refreshChips(){
+  FOODS.forEach(f => {
+    const el = chipsEl.querySelector('[data-id="'+f.id+'"]');
+    if (el) el.classList.toggle('on', f.taken);
+  });
+}
+function updateMeter(){
+  meterFill.style.width = meter + '%';
+  meterPct.textContent = Math.round(meter) + '%';
+  meterEl.classList.toggle('hot', meter >= 80);
+  meterPct.classList.toggle('hot', meter >= 80);
+}
+
+/* ============================================================
+   INPUT — keyboard
+   ============================================================ */
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
+  if (k === 'arrowup'    || k === 'w') keys.up = true;
+  if (k === 'arrowdown'  || k === 's') keys.down = true;
+  if (k === 'arrowleft'  || k === 'a') keys.left = true;
+  if (k === 'arrowright' || k === 'd') keys.right = true;
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'arrowup'    || k === 'w') keys.up = false;
+  if (k === 'arrowdown'  || k === 's') keys.down = false;
+  if (k === 'arrowleft'  || k === 'a') keys.left = false;
+  if (k === 'arrowright' || k === 'd') keys.right = false;
+});
+
+/* ============================================================
+   INPUT — joystick (drag di mana aja) + skip cutscene
+   ============================================================ */
+let dragId = null, dragOx = 0, dragOy = 0;
+const dragVec = { x:0, y:0 };
+
+stageEl.addEventListener('pointerdown', e => {
+  if (e.target.closest('.chips') || e.target.closest('.skip') || e.target.closest('.hint')) return;
+
+  if (state === 'cutscene'){ skipCutscene(); return; }
+
+  if (state !== 'play') return;
+
+  dragId = e.pointerId;
+  const r = stageEl.getBoundingClientRect();
+  dragOx = e.clientX - r.left;
+  dragOy = e.clientY - r.top;
+  dragVec.x = 0; dragVec.y = 0;
+  hintEl.classList.remove('show');
+  try { stageEl.setPointerCapture(e.pointerId); } catch(err){}
+});
+
+stageEl.addEventListener('pointermove', e => {
+  if (e.pointerId !== dragId) return;
+  const r = stageEl.getBoundingClientRect();
+  const dx = (e.clientX - r.left) - dragOx;
+  const dy = (e.clientY - r.top)  - dragOy;
+  const len = Math.hypot(dx, dy);
+  if (len < 8){ dragVec.x = 0; dragVec.y = 0; return; }
+  const max = 54;
+  const k = Math.min(len, max) / max;
+  dragVec.x = (dx / len) * k;
+  dragVec.y = (dy / len) * k;
+});
+
+function endDrag(e){
+  if (e.pointerId !== dragId) return;
+  dragId = null; dragVec.x = 0; dragVec.y = 0;
+}
+stageEl.addEventListener('pointerup', endDrag);
+stageEl.addEventListener('pointercancel', endDrag);
+stageEl.addEventListener('pointerleave', endDrag);
+
+/* ============================================================
+   FX
+   ============================================================ */
+function shakeStage(){
+  stageEl.classList.remove('shaking');
+  void stageEl.offsetWidth;
+  stageEl.classList.add('shaking');
+  setTimeout(() => stageEl.classList.remove('shaking'), 360);
+}
+function flashScreen(){
+  flashEl.classList.remove('on');
+  void flashEl.offsetWidth;
+  flashEl.classList.add('on');
+}
+function spawnParticles(f){
+  for (let i=0;i<22;i++){
+    const a = Math.random() * Math.PI * 2;
+    const s = 1.0 + Math.random() * 3.6;
+    particles.push({
+      x: f.x, y: f.y,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: 1, r: 0.05 + Math.random() * 0.09,
+      hue: Math.random() < 0.5 ? 45 : 190
+    });
+  }
+}
+
+/* ============================================================
+   COLLECT
+   ============================================================ */
+function collect(food){
+  food.taken = true;
+  meter = Math.min(100, meter + 20);
+  spawnParticles(food);
+  flashScreen();
+  shakeStage();
+  sfx.pick();
+  if (navigator.vibrate) { try { navigator.vibrate(22); } catch(e){} }
+  updateMeter();
+  refreshChips();
+
+  state = 'story';
+  setTimeout(() => {
+    Dialogue.start(food.story, () => {
+      if (FOODS.every(f => f.taken)){
+        setTimeout(() => {
+          Dialogue.start(STORY_FINAL, () => startDoom());
+        }, 240);
+      } else {
+        state = 'play';
+      }
+    });
+  }, 280);
+}
+
+/* ============================================================
+   DOOM
+   ============================================================ */
+function startDoom(){
+  state = 'doom';
+  const run = ++doomRunId;
+
+  doomScreen.classList.remove('hidden');
+  spamLayer.innerHTML = '';
+  endingEl.classList.remove('show');
+
+  doomTitle.className = 'doom-title phase1';
+  doomTitle.style.display = '';
+  doomTitle.textContent = 'METER BALALA PENUH';
+
+  sfx.boom();
+  sfx.heartbeat(3);
+
+  setTimeout(() => {
+    if (run !== doomRunId) return;
+    doomTitle.className = 'doom-title phase2';
+    doomTitle.textContent = 'balala.com';
+    sfx.glitch();
+    doomScreen.classList.add('shaking');
+    setTimeout(() => doomScreen.classList.remove('shaking'), 500);
+  }, 1900);
+
+  setTimeout(() => {
+    if (run !== doomRunId) return;
+    doomTitle.style.display = 'none';
+    spawnSpam(run);
+  }, 3600);
+
+  setTimeout(() => {
+    if (run !== doomRunId) return;
+    state = 'end';
+    endingEl.classList.add('show');
+  }, 3600 + 3400);
+}
+
+function spawnSpam(run){
+  const isSmall = window.innerWidth < 520;
+  const count = isSmall ? 200 : 300;
+  const colors = ['#4de2ff','#ff5fa2','#ffd166','#ffffff','#ff2d55','#8b7bff','#5cff9d','#ff9a3c'];
+  const frag = document.createDocumentFragment();
+
+  for (let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'spam-word';
+    el.textContent = Math.random() < 0.15 ? 'BALALA.COM' : 'balala.com';
+    el.style.left = (Math.random() * 96) + '%';
+    el.style.top  = (Math.random() * 96) + '%';
+    el.style.fontSize = (8 + Math.random() * 42) + 'px';
+    el.style.color = colors[(Math.random() * colors.length) | 0];
+    el.style.animationDelay = (Math.random() * 1.9) + 's';
+    el.style.setProperty('--rot', (Math.random() * 44 - 22).toFixed(1) + 'deg');
+    frag.appendChild(el);
+  }
+  spamLayer.appendChild(frag);
+
+  let ticks = 0;
+  const timer = setInterval(() => {
+    if (run !== doomRunId){ clearInterval(timer); return; }
+    sfx.tick();
+    ticks++;
+    if (ticks > 22) clearInterval(timer);
+  }, 130);
+}
+
+/* ============================================================
+   CLASSROOM CUTSCENE
+   ============================================================ */
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function drawTeacher(cx_, cy_, size){
+  const headR = size * 0.13;
+  const headY = cy_ - size * 0.75;
+  const shoulderY = cy_ - size * 0.58;
+  const bodyBottom = cy_;
+
+  ctx.fillStyle = '#0a1220';
+  ctx.beginPath();
+  ctx.moveTo(cx_ - size * 0.14, bodyBottom);
+  ctx.lineTo(cx_ - size * 0.18, shoulderY + size * 0.1);
+  ctx.quadraticCurveTo(cx_ - size * 0.2, shoulderY, cx_ - size * 0.1, shoulderY - size * 0.05);
+  ctx.lineTo(cx_ + size * 0.1, shoulderY - size * 0.05);
+  ctx.quadraticCurveTo(cx_ + size * 0.2, shoulderY, cx_ + size * 0.18, shoulderY + size * 0.1);
+  ctx.lineTo(cx_ + size * 0.14, bodyBottom);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx_, headY, headR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(77,226,255,.22)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx_, headY, headR, Math.PI * 0.7, Math.PI * 1.3);
+  ctx.stroke();
+
+  // pointer stick raised
+  ctx.strokeStyle = '#0a1220';
+  ctx.lineWidth = size * 0.045;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx_ + size * 0.13, shoulderY + size * 0.15);
+  ctx.lineTo(cx_ + size * 0.28, shoulderY - size * 0.15);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(77,226,255,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawDesk(x, y, size){
+  ctx.fillStyle = '#0a1220';
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.55, y);
+  ctx.lineTo(x + size * 0.55, y);
+  ctx.lineTo(x + size * 0.45, y + size * 0.12);
+  ctx.lineTo(x - size * 0.45, y + size * 0.12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillRect(x - size * 0.45, y + size * 0.12, size * 0.06, size * 0.28);
+  ctx.fillRect(x + size * 0.39, y + size * 0.12, size * 0.06, size * 0.28);
+
+  ctx.strokeStyle = 'rgba(77,226,255,.14)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - size * 0.55, y);
+  ctx.lineTo(x + size * 0.55, y);
+  ctx.stroke();
+}
+
+function drawDeskRow(y, scl){
+  const spacing = W / 3;
+  for (let i = 0; i < 3; i++){
+    drawDesk(spacing * (i + 0.5), y, Math.min(W, H) * 0.16 * scl);
+  }
+}
+
+function drawSleepingStudent(cx_, cy_, size){
+  const droopP = Math.max(0, Math.min(1, (cut.t - 8.0) / 2.6));
+  const tilt = droopP * 0.65;
+
+  ctx.fillStyle = '#1a2030';
+  ctx.beginPath();
+  ctx.moveTo(cx_ - size * 0.4, cy_ + size * 0.15);
+  ctx.lineTo(cx_ - size * 0.32, cy_ - size * 0.35);
+  ctx.quadraticCurveTo(cx_ - size * 0.2, cy_ - size * 0.55, cx_, cy_ - size * 0.55);
+  ctx.quadraticCurveTo(cx_ + size * 0.2, cy_ - size * 0.55, cx_ + size * 0.32, cy_ - size * 0.35);
+  ctx.lineTo(cx_ + size * 0.4, cy_ + size * 0.15);
+  ctx.closePath();
+  ctx.fill();
+
+  const headR = size * 0.28;
+  const headCY = cy_ - size * 0.72 + droopP * headR * 0.75;
+  const headCX = cx_ + tilt * headR * 0.35;
+
+  ctx.fillStyle = '#0a1220';
+  ctx.beginPath();
+  ctx.arc(headCX, headCY, headR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(77,226,255,.2)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(headCX, headCY, headR, Math.PI * 0.6, Math.PI * 1.4);
+  ctx.stroke();
+}
+
+function drawClassroom(){
+  const ct = cut.t;
+
+  // wall
+  const wallG = ctx.createLinearGradient(0, 0, 0, H * 0.62);
+  wallG.addColorStop(0, '#070a14');
+  wallG.addColorStop(1, '#0f1728');
+  ctx.fillStyle = wallG;
+  ctx.fillRect(0, 0, W, H * 0.62);
+
+  // floor
+  const floorG = ctx.createLinearGradient(0, H * 0.62, 0, H);
+  floorG.addColorStop(0, '#0b1224');
+  floorG.addColorStop(1, '#03050c');
+  ctx.fillStyle = floorG;
+  ctx.fillRect(0, H * 0.62, W, H * 0.38);
+
+  // wall/floor line
+  ctx.strokeStyle = 'rgba(77,226,255,.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.62);
+  ctx.lineTo(W, H * 0.62);
+  ctx.stroke();
+
+  // ambient glow behind board
+  const glow = ctx.createRadialGradient(W * 0.45, H * 0.25, 0, W * 0.45, H * 0.25, W * 0.38);
+  glow.addColorStop(0, 'rgba(77,226,255,.10)');
+  glow.addColorStop(1, 'rgba(77,226,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H * 0.62);
+
+  // whiteboard
+  const bw = Math.min(W * 0.6, H * 0.55);
+  const bh = bw * 0.55;
+  const bx = W * 0.45 - bw * 0.5;
+  const by = H * 0.12;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(77,226,255,.35)';
+  ctx.shadowBlur = 22;
+  ctx.fillStyle = '#1a2b4a';
+  roundRect(bx, by, bw, bh, 6);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(77,226,255,.35)';
+  ctx.lineWidth = 1.5;
+  roundRect(bx, by, bw, bh, 6);
+  ctx.stroke();
+
+  // board content
+  ctx.fillStyle = 'rgba(77,226,255,.78)';
+  ctx.font = 'bold ' + Math.round(bh * 0.22) + 'px "Trebuchet MS",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('x = 2y + 3', bx + bw * 0.08, by + bh * 0.32);
+  ctx.fillText('y = mx + c', bx + bw * 0.08, by + bh * 0.62);
+
+  ctx.fillStyle = 'rgba(255,45,85,.18)';
+  ctx.font = 'italic ' + Math.round(bh * 0.12) + 'px "Trebuchet MS",sans-serif';
+  ctx.fillText('balala.com', bx + bw * 0.5, by + bh * 0.87);
+
+  // clock
+  const cR = Math.min(W, H) * 0.04;
+  const cX = W * 0.82;
+  const cY = H * 0.22;
+  ctx.beginPath();
+  ctx.arc(cX, cY, cR, 0, Math.PI * 2);
+  ctx.fillStyle = '#0a1220';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(77,226,255,.4)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(77,226,255,.75)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cX, cY);
+  ctx.lineTo(cX + cR * 0.1, cY - cR * 0.5);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cX, cY);
+  ctx.lineTo(cX + cR * 0.55, cY - cR * 0.1);
+  ctx.stroke();
+
+  // teacher
+  drawTeacher(W * 0.5, H * 0.63, Math.min(W, H) * 0.22);
+
+  // desks
+  drawDeskRow(H * 0.72, 0.55);
+  drawDeskRow(H * 0.80, 0.75);
+
+  // player (back, drooping)
+  drawSleepingStudent(W * 0.5, H * 0.92, Math.min(W, H) * 0.18);
+
+  // dust motes
+  for (let i = 0; i < 22; i++){
+    const dx = ((i * 73.1 + ct * 6) % (W + 40)) - 20;
+    const dy = ((i * 41.7 + ct * 2.2) % (H * 0.6)) + H * 0.05;
+    const alpha = 0.08 + Math.sin(ct * 0.8 + i) * 0.06;
+    ctx.fillStyle = 'rgba(77,226,255,' + alpha + ')';
+    ctx.beginPath();
+    ctx.arc(dx, dy, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // sleep vignette
+  const sleepP = Math.max(0, Math.min(1, (ct - 9.0) / 2.5));
+  if (sleepP > 0){
+    const vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.25, W/2, H/2, Math.max(W,H)*0.7);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(0.7, 'rgba(0,0,0,' + (sleepP * 0.75) + ')');
+    vig.addColorStop(1, 'rgba(0,0,0,' + sleepP + ')');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // full fade to black
+  const fadeP = Math.max(0, Math.min(1, (ct - 11.5) / 1.3));
+  if (fadeP > 0){
+    ctx.fillStyle = 'rgba(0,0,0,' + fadeP + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function updateCaption(){
+  const c = cut.captions.find(c => cut.t >= c.start && cut.t < c.end);
+  if (c){
+    if (captionEl.innerHTML !== c.text){
+      captionEl.innerHTML = c.text;
+      captionEl.classList.add('show');
+    }
+  } else {
+    captionEl.classList.remove('show');
+  }
+}
+
+/* ============================================================
+   WAKE TRANSITION
+   ============================================================ */
+function drawWakeScene(){
+  drawPlayWorld(false);
+
+  const p = Math.min(1, wakeT / 2.0);
+  const maxR = Math.hypot(W, H) * 0.7;
+  const r = p * maxR;
+
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.rect(0, 0, W, H);
+  ctx.arc(W/2, H/2, r, 0, Math.PI * 2, true);
+  ctx.fill();
+
+  if (p < 0.85){
+    ctx.fillStyle = 'rgba(77,226,255,' + (1 - p) + ')';
+    ctx.font = 'bold 14px "Trebuchet MS",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('bangun...', W/2, H/2);
+  }
+}
+
+/* ============================================================
+   UPDATE
+   ============================================================ */
+function update(dt){
+  if (state === 'cutscene'){
+    cut.t += dt;
+    updateCaption();
+    if (cut.t >= cut.total) startWake();
+  }
+  else if (state === 'wake'){
+    wakeT += dt;
+    if (wakeT >= 2.2){
+      state = 'story';
+      Dialogue.start(STORY_INTRO, () => {
+        state = 'play';
+        hintEl.classList.add('show');
+        setTimeout(() => hintEl.classList.remove('show'), 5000);
+      });
+    }
+  }
+  else if (state === 'play'){
+    let ix = 0, iy = 0;
+    if (keys.up)    iy += 1;
+    if (keys.down)  iy -= 1;
+    if (keys.left)  ix -= 1;
+    if (keys.right) ix += 1;
+
+    ix += dragVec.x;
+    iy -= dragVec.y;
+
+    let mag = Math.hypot(ix, iy);
+    if (mag > 1){ ix /= mag; iy /= mag; mag = 1; }
+
+    if (mag > 0.12){
+      player.x += ix * SPEED * dt;
+      player.y += iy * SPEED * dt;
+      if (Math.abs(ix) > 0.08) player.face = ix > 0 ? 1 : -1;
+      player.moving = true;
+    } else {
+      player.moving = false;
+    }
+
+    const hx = W / (2 * scale) - 0.65;
+    const hy = H / (2 * scale) - 0.65;
+    if (player.x < -hx) player.x = -hx;
+    if (player.x >  hx) player.x =  hx;
+    if (player.y < -hy) player.y = -hy;
+    if (player.y >  hy) player.y =  hy;
+
+    player.bob += dt * (player.moving ? 12 : 3);
+
+    if (player.moving && Math.random() < 0.4){
+      trails.push({ x: player.x, y: player.y, life: 0.55 });
+    }
+
+    for (const f of FOODS){
+      if (f.taken) continue;
+      if (Math.hypot(player.x - f.x, player.y - f.y) < PICK_R){
+        collect(f);
+        break;
+      }
+    }
+  }
+
+  for (let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy -= 2.6 * dt;
+    p.vx *= 0.98;
+    p.life -= dt * 1.5;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i=trails.length-1;i>=0;i--){
+    trails[i].life -= dt;
+    if (trails[i].life <= 0) trails.splice(i, 1);
+  }
+}
+
+/* ============================================================
+   RENDER — GAME WORLD
+   ============================================================ */
+function drawGrid(){
+  const hx = W / (2 * scale);
+  const hy = H / (2 * scale);
+  ctx.lineWidth = 1;
+
+  for (let i = Math.ceil(-hx); i <= Math.floor(hx); i++){
+    const x = Math.round(cx + i * scale) + 0.5;
+    ctx.strokeStyle = (i % 5 === 0) ? 'rgba(120,170,255,.15)' : 'rgba(120,170,255,.055)';
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let j = Math.ceil(-hy); j <= Math.floor(hy); j++){
+    const y = Math.round(cy - j * scale) + 0.5;
+    ctx.strokeStyle = (j % 5 === 0) ? 'rgba(120,170,255,.15)' : 'rgba(120,170,255,.055)';
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
+
+function drawAxes(){
+  const ax = Math.round(cx) + 0.5;
+  const ay = Math.round(cy) + 0.5;
+
+  ctx.strokeStyle = 'rgba(77,226,255,.55)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(0, ay); ctx.lineTo(W - 4, ay); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ax, H); ctx.lineTo(ax, 4); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(77,226,255,.8)';
+  ctx.beginPath(); ctx.moveTo(W - 1, ay); ctx.lineTo(W - 12, ay - 5); ctx.lineTo(W - 12, ay + 5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ax, 1); ctx.lineTo(ax - 5, 12); ctx.lineTo(ax + 5, 12); ctx.closePath(); ctx.fill();
+
+  ctx.font = 'bold 14px "Trebuchet MS",sans-serif';
+  ctx.fillStyle = 'rgba(77,226,255,.9)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('x', W - 18, ay - 15);
+  ctx.fillText('y', ax + 16, 15);
+
+  const step = scale >= 22 ? 2 : 5;
+  ctx.font = '11px "Trebuchet MS",sans-serif';
+  ctx.fillStyle = 'rgba(160,200,255,.45)';
+
+  const hx = W / (2 * scale);
+  const hy = H / (2 * scale);
+
+  for (let i = Math.ceil(-hx); i <= Math.floor(hx); i++){
+    if (i === 0 || i % step !== 0) continue;
+    ctx.fillText(String(i), cx + i * scale, ay + 13);
+  }
+  for (let j = Math.ceil(-hy); j <= Math.floor(hy); j++){
+    if (j === 0 || j % step !== 0) continue;
+    ctx.fillText(String(j), ax - 14, cy - j * scale);
+  }
+
+  ctx.beginPath();
+  ctx.arc(ax, ay, 3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(77,226,255,.8)';
+  ctx.fill();
+}
+
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+
+function drawFoods(){
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (const f of FOODS){
+    if (f.taken) continue;
+    const sx = cx + f.x * scale;
+    const sy = cy - f.y * scale;
+    const pulse = 1 + Math.sin(t * 3 + f.x * 1.7) * 0.09;
+
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, scale * 1.05 * pulse);
+    g.addColorStop(0, 'rgba(255,209,102,.32)');
+    g.addColorStop(0.5, 'rgba(255,209,102,.12)');
+    g.addColorStop(1, 'rgba(255,209,102,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(sx, sy, scale * 1.05 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = Math.round(scale * 0.9 * pulse) + 'px ' + EMOJI_FONT;
+    ctx.fillText(f.emoji, sx, sy + Math.sin(t * 2.4 + f.x) * scale * 0.06);
+
+    ctx.font = '600 ' + Math.max(9, Math.round(scale * 0.22)) + 'px "Trebuchet MS",sans-serif';
+    ctx.fillStyle = 'rgba(232,236,255,.55)';
+    ctx.fillText(f.name, sx, sy + scale * 0.78);
+  }
+}
+
+function drawTrails(){
+  for (const tr of trails){
+    const sx = cx + tr.x * scale;
+    const sy = cy - tr.y * scale;
+    ctx.globalAlpha = tr.life * 0.4;
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.arc(sx, sy, scale * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawParticles(){
+  for (const p of particles){
+    const sx = cx + p.x * scale;
+    const sy = cy - p.y * scale;
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = 'hsl(' + p.hue + ',100%,66%)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.r * scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawCompass(){
+  const remaining = FOODS.filter(f => !f.taken);
+  if (!remaining.length) return;
+
+  let best = remaining[0], bestD = Infinity;
+  for (const f of remaining){
+    const d = Math.hypot(f.x - player.x, f.y - player.y);
+    if (d < bestD){ bestD = d; best = f; }
+  }
+
+  const px = cx + player.x * scale;
+  const py = cy - player.y * scale;
+  const ang = Math.atan2(-(best.y - player.y), best.x - player.x);
+  const dist = scale * 1.55;
+  const ax = px + Math.cos(ang) * dist;
+  const ay = py + Math.sin(ang) * dist;
+  const pulse = 0.55 + Math.sin(t * 5) * 0.3;
+
+  ctx.save();
+  ctx.translate(ax, ay);
+  ctx.rotate(ang);
+  ctx.globalAlpha = pulse;
+  ctx.beginPath();
+  ctx.moveTo(8, 0);
+  ctx.lineTo(-4, -6);
+  ctx.lineTo(-1, 0);
+  ctx.lineTo(-4, 6);
+  ctx.closePath();
+  ctx.fillStyle = '#ffd166';
+  ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawPlayer(){
+  const px = cx + player.x * scale;
+  const py = cy - player.y * scale;
+  const r  = 0.6 * scale;
+  const bob = Math.sin(player.bob) * (player.moving ? r * 0.15 : r * 0.05);
+
+  ctx.beginPath();
+  ctx.ellipse(px, py + r * 0.98, r * 0.82, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,.4)';
+  ctx.fill();
+
+  const by = py + bob;
+
+  const g = ctx.createRadialGradient(px - r * 0.35, by - r * 0.45, r * 0.15, px, by, r);
+  g.addColorStop(0, '#ffeaa8');
+  g.addColorStop(0.55, '#ffcf5c');
+  g.addColorStop(1, '#ff9f2e');
+
+  ctx.beginPath();
+  ctx.arc(px, by, r, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.5, r * 0.13);
+  ctx.strokeStyle = '#a35a00';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(px - r * 0.32, by - r * 0.42, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.62)';
+  ctx.fill();
+
+  const eDX = r * 0.34, eDY = -r * 0.1, pDX = player.face * r * 0.09;
+  for (const s of [-1, 1]){
+    ctx.beginPath();
+    ctx.arc(px + s * eDX, by + eDY, r * 0.26, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px + s * eDX + pDX, by + eDY + r * 0.02, r * 0.13, 0, Math.PI * 2);
+    ctx.fillStyle = '#1a2233';
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = '#ff7fa8';
+  for (const s of [-1, 1]){
+    ctx.beginPath();
+    ctx.arc(px + s * r * 0.58, by + r * 0.24, r * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.beginPath();
+  ctx.arc(px, by + r * 0.16, r * 0.33, Math.PI * 0.18, Math.PI * 0.82);
+  ctx.strokeStyle = '#7a3d00';
+  ctx.lineWidth = Math.max(1.3, r * 0.11);
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function drawJoystick(){
+  if (dragId === null) return;
+  ctx.beginPath();
+  ctx.arc(dragOx, dragOy, 44, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(77,226,255,.32)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(dragOx, dragOy, 44, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(77,226,255,.15)';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(dragOx + dragVec.x * 44, dragOy + dragVec.y * 44, 16, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(77,226,255,.55)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.4)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawPlayWorld(showCompass){
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.75);
+  bg.addColorStop(0, '#101730');
+  bg.addColorStop(1, '#080b14');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  drawGrid();
+  drawAxes();
+  drawFoods();
+  drawTrails();
+  drawParticles();
+  if (showCompass) drawCompass();
+  drawPlayer();
+  drawJoystick();
+
+  const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H) * 0.35, W/2, H/2, Math.max(W,H) * 0.8);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.45)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ============================================================
+   RENDER DISPATCH
+   ============================================================ */
+function render(){
+  if (state === 'cutscene'){ drawClassroom(); }
+  else if (state === 'wake'){ drawWakeScene(); }
+  else if (state === 'play' || state === 'story'){ drawPlayWorld(state === 'play'); }
+}
+
+/* ============================================================
+   LOOP
+   ============================================================ */
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!last) last = now;
+  let dt = (now - last) / 1000;
+  last = now;
+  if (dt > 0.05) dt = 0.05;
+  t += dt;
+  update(dt);
+  render();
+}
+
+/* ============================================================
+   FLOW
+   ============================================================ */
+function buildIntroBg(){
+  const words = ['balala.com','x = 2y + 3','y = mx + c','balala.com','f(x)','sin cos tan','balala.com','∫ dx','(0,0)','balala.com'];
+  for (let i=0;i<14;i++){
+    const el = document.createElement('div');
+    el.className = 'intro-float';
+    el.textContent = words[i % words.length];
+    el.style.left = (Math.random() * 80) + '%';
+    el.style.fontSize = (16 + Math.random() * 40) + 'px';
+    el.style.animationDuration = (14 + Math.random() * 18) + 's';
+    el.style.animationDelay = (-Math.random() * 20) + 's';
+    introBg.appendChild(el);
+  }
+}
+
+function startCutscene(){
+  state = 'cutscene';
+  cut.t = 0;
+  captionEl.innerHTML = '';
+  captionEl.classList.remove('show');
+  skipEl.classList.add('show');
+  meterbox.style.opacity = '0';
+  chipsEl.style.opacity = '0';
+}
+
+function startWake(){
+  if (state !== 'cutscene') return;
+  state = 'wake';
+  wakeT = 0;
+  captionEl.classList.remove('show');
+  skipEl.classList.remove('show');
+  meterbox.style.opacity = '1';
+  chipsEl.style.opacity = '1';
+  sfx.wake();
+}
+
+function skipCutscene(){
+  if (state !== 'cutscene') return;
+  startWake();
+}
+
+function beginRun(){
+  // reset
+  doomRunId++;
+  FOODS.forEach(f => f.taken = false);
+  player.x = 0; player.y = -3.5; player.face = 1; player.bob = 0; player.moving = false;
+  particles.length = 0; trails.length = 0;
+  meter = 0; updateMeter(); refreshChips();
+  keys.up = keys.down = keys.left = keys.right = false;
+  dragId = null; dragVec.x = 0; dragVec.y = 0;
+
+  doomScreen.classList.add('hidden');
+  spamLayer.innerHTML = '';
+  endingEl.classList.remove('show');
+  doomTitle.style.display = '';
+  doomTitle.className = 'doom-title';
+  doomTitle.textContent = '';
+
+  startCutscene();
+}
+
+startBtn.addEventListener('click', () => {
+  audio();
+  sfx.start();
+  introScreen.classList.add('hidden');
+  beginRun();
+});
+
+againBtn.addEventListener('click', () => {
+  audio();
+  introScreen.classList.remove('hidden');
+  doomScreen.classList.add('hidden');
+  endingEl.classList.remove('show');
+  spamLayer.innerHTML = '';
+  state = 'title';
+  FOODS.forEach(f => f.taken = false);
+  player.x = 0; player.y = -3.5;
+  meter = 0; updateMeter(); refreshChips();
+  meterbox.style.opacity = '1';
+  chipsEl.style.opacity = '1';
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildChips();
+refreshChips();
+updateMeter();
+buildIntroBg();
+resize();
+requestAnimationFrame(() => {
+  resize();
+  requestAnimationFrame(loop);
+});
+
+})();
+</script>
+</body>
+</html>
