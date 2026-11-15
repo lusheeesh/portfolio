@@ -46,5 +46,11 @@
     "description": "A tiny sound laboratory with a real-time oscilloscope visualizer.",
     "url": "https://alphabet.is-cool.dev/wavey",
     "stack": "HTML · CSS · JS · Web Audio API"
+  },
+  {
+    "name": "Aurelius Chess",
+    "description": "A full chess platform. Bots, online rooms, puzzles, analysis. No accounts, no signup.",
+    "url": "https://aureliuschess.vercel.app",
+    "stack": "HTML · CSS · JS · MQTT · Vercel"
   }
 ]
