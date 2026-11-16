@@ -1010,10 +1010,13 @@
             <button class="choice-btn" data-mode="knockback">Mega Knockback</button>
           </div>
 
+          <div class="section-label" style="margin-top:10px;">Map</div>
+          <div class="grid-2" id="map-grid"></div>
+
           <div class="section-label" style="margin-top:10px;">AI Difficulty</div>
           <div class="grid-3" id="diff-grid">
-            <button class="choice-btn" data-diff="casual">Casual</button>
-            <button class="choice-btn active-green" data-diff="pro">Pro</button>
+            <button class="choice-btn active-green" data-diff="casual">Casual</button>
+            <button class="choice-btn" data-diff="pro">Pro</button>
             <button class="choice-btn" data-diff="master">Master</button>
           </div>
 
@@ -1450,7 +1453,7 @@
       }
 
       const SET = (() => {
-        const d = { touch: 2.6, mouse: 1.8, fov: 74, pad: 1, autoSprint: true, autoBridge: true };
+        const d = { touch: 2.6, mouse: 1.8, fov: 74, pad: 0.85, sd: 300, autoSprint: true, autoBridge: true };
         try { return { ...d, ...JSON.parse(localStorage.getItem('bm_go_settings') || '{}') }; } catch (e) { return d; }
       })();
       const saveSet = () => { try { localStorage.setItem('bm_go_settings', JSON.stringify(SET)); } catch (e) {} };
@@ -1578,7 +1581,11 @@
         { id: 'bridge_egg', cat: 'special', name: 'Bridge Egg',   count: 1, cost: 2,  curr: 'emerald', icon: 'egg',      desc: 'Builds wool bridge mid-air' },
         { id: 'pearl',      cat: 'special', name: 'Ender Pearl',  count: 1, cost: 4,  curr: 'emerald', icon: 'pearl',    desc: 'Teleports to impact point' },
         { id: 'gapple',     cat: 'special', name: 'Golden Apple', count: 1, cost: 3,  curr: 'gold',    icon: 'apple',    desc: '+8 HP & +4 Golden Shield' },
-        { id: 'magic_milk', cat: 'special', name: 'Magic Milk',   count: 1, cost: 4,  curr: 'gold',    icon: 'milk',     desc: '30s enemy Bed Trap immunity' }
+        { id: 'magic_milk', cat: 'special', name: 'Magic Milk',   count: 1, cost: 4,  curr: 'gold',    icon: 'milk',     desc: '30s enemy Bed Trap immunity' },
+        { id: 'bed_armor',  cat: 'special', name: 'Bed Armor',     count: 1, cost: 6,  curr: 'gold',    icon: 'bed',      desc: 'Wraps your bed in End Stone' },
+        { id: 'wall',       cat: 'special', name: 'Instant Wall',  count: 1, cost: 24, curr: 'iron',    icon: 'wool',     desc: 'Builds a 5x3 wool wall ahead' },
+        { id: 'speed_pot',  cat: 'special', name: 'Speed Potion',  count: 1, cost: 1,  curr: 'emerald', icon: 'bolt',     desc: '+35% speed for 30s' },
+        { id: 'jump_pot',   cat: 'special', name: 'Jump Potion',   count: 1, cost: 1,  curr: 'emerald', icon: 'jump',     desc: '+30% jump for 30s' }
       ];
 
       const TEAM_UPGRADES = [
@@ -1800,6 +1807,7 @@
         if (id === 'wool') part(.3, .3, .3, M(teamHex), 0, .2, 0);
         else if (blocks[id]) part(.3, .3, .3, blocks[id], 0, .2, 0);
         else if (id === 'sword') { part(.07, .55, .03, M(bladeHex, bladeHex), 0, .42, 0); part(.22, .06, .07, gold, 0, .12); part(.05, .16, .05, wood, 0, 0); }
+        else if (id === 'wall' || id === 'bed_armor') part(.3, .3, .3, MATS.endstone, 0, .2, 0);
         else if (id === 'kb_stick') { part(.06, .8, .06, wood, 0, .3, 0); part(.12, .12, .12, M(0xa855f7, 0xa855f7), 0, .72, 0); }
         else if (id === 'iron_pick' || id === 'diamond_pick' || id === 'iron_axe') {
           const head = M(id === 'diamond_pick' ? 0x22d3ee : 0xcbd5e1);
@@ -1810,7 +1818,7 @@
         else if (id === 'bow') { part(.05, .35, .05, wood, 0, .5, 0, -.5); part(.05, .35, .05, wood, 0, .15, 0, .5); part(.01, .7, .01, M(0xe2e8f0), -.12, .33, 0); }
         else if (id === 'arrow') { part(.03, .5, .03, wood, 0, .3, 0); part(.07, .1, .03, M(0x94a3b8), 0, .6, 0); }
         else {
-          const col = { fireball: 0xf97316, pearl: 0x7e22ce, bridge_egg: 0xfef3c7, gapple: 0xfacc15 }[id] || 0xf8fafc;
+          const col = { fireball: 0xf97316, pearl: 0x7e22ce, bridge_egg: 0xfef3c7, gapple: 0xfacc15, speed_pot: 0x38bdf8, jump_pot: 0x4ade80 }[id] || 0xf8fafc;
           const em = { fireball: 0xf97316, pearl: 0xa855f7 }[id] || 0;
           const sp = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 10), M(col, em));
           sp.position.y = .25; if (id === 'bridge_egg') sp.scale.y = 1.3; g.add(sp);
@@ -1842,7 +1850,7 @@
         const fy = Math.round(p.pos.y - 0.5);
         const ax = Math.round(p.pos.x + (p.vel.x / hs) * 0.6);
         const az = Math.round(p.pos.z + (p.vel.z / hs) * 0.6);
-        if (getBlock(ax, fy, az) || getBlock(ax, fy + 1, az)) return;
+        if (hasGroundAt(p.pos.x + (p.vel.x / hs) * 0.6, fy, p.pos.z + (p.vel.z / hs) * 0.6) || getBlock(ax, fy + 1, az)) return;
         consumeHotbarSlot(p, 1);
         addBlock(ax, fy, az, sl.id, { team: p.teamId });
         sound.playPlace();
@@ -2186,6 +2194,9 @@
         particles = [];
         worldGroup.add(selectWire);
         worldGroup.add(bridgeGhost);
+        const th = MAP_THEME[selectedMap] || MAP_THEME.classic;
+        scene.background.setHex(th[0]);
+        scene.fog.color.setHex(th[1]);
 
         for (let x = -6; x <= 6; x++) {
           for (let z = -6; z <= 6; z++) {
@@ -2214,6 +2225,47 @@
           addGenerator('diamond', new THREE.Vector3(dx, 1.2, dz), null);
         });
 
+        if (selectedMap === 'ring') {
+          for (let i = -18; i <= 18; i++) {
+            [[i, -18], [i, 18], [-18, i], [18, i]].forEach(([x, z]) => { if (!getBlock(x, 0, z)) addBlock(x, 0, z, 'stone', {}); });
+          }
+          for (let i = 7; i <= 17; i++) {
+            [[i, 0], [-i, 0], [0, i], [0, -i]].forEach(([x, z]) => { if (!getBlock(x, 0, z)) addBlock(x, 0, z, 'stone', {}); });
+          }
+        }
+        if (selectedMap === 'ruins') {
+          let seed = 7;
+          const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+          for (let i = 0; i < 16; i++) {
+            const a = rnd() * Math.PI * 2, d = 10 + rnd() * 12;
+            const cx = Math.round(Math.cos(a) * d), cz = Math.round(Math.sin(a) * d);
+            for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) addBlock(cx + x, 0, cz + z, 'stone', { protected: true });
+            const h = 1 + Math.floor(rnd() * 4);
+            for (let y = 1; y <= h; y++) addBlock(cx, y, cz, 'marble', { protected: true });
+          }
+        }
+        const sr = (sd => () => (sd = (sd * 16807) % 2147483647) / 2147483647)(11);
+        const isl = (cx, cz, y, mat) => { for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) addBlock(cx + x, y, cz + z, mat, { protected: true }); };
+        if (selectedMap === 'pillars') {
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2, cx = Math.round(Math.cos(a) * 15), cz = Math.round(Math.sin(a) * 15);
+            for (let y = 0; y <= 5; y++) addBlock(cx, y, cz, 'marble', { protected: true });
+            isl(cx, cz, 6, 'stone');
+          }
+        }
+        if (selectedMap === 'archipelago') {
+          for (let i = 0; i < 26; i++) { const a = sr() * Math.PI * 2, d = 9 + sr() * 20; isl(Math.round(Math.cos(a) * d), Math.round(Math.sin(a) * d), 0, 'grass'); }
+        }
+        if (selectedMap === 'colosseum') {
+          for (let a = 0; a < Math.PI * 2; a += 0.05) {
+            const x = Math.round(Math.cos(a) * 7), z = Math.round(Math.sin(a) * 7);
+            if (Math.abs(x) <= 1 || Math.abs(z) <= 1) continue;
+            for (let y = 0; y <= 3; y++) addBlock(x, y, z, 'marble', { protected: true });
+          }
+        }
+        if (selectedMap === 'storm') {
+          for (let i = 0; i < 14; i++) { const a = sr() * Math.PI * 2, d = 10 + sr() * 14; isl(Math.round(Math.cos(a) * d), Math.round(Math.sin(a) * d), 2 + Math.floor(sr() * 5), 'stone'); }
+        }
         TEAM_ORDER.forEach(tId => {
           const team = TEAMS[tId];
           const bx = team.base.x;
@@ -2233,8 +2285,8 @@
             }
           }
 
-          if (mode === 'rush') {
-            for (let step = 6; step <= 18; step++) {
+          if (mode === 'rush' || selectedMap === 'bridges') {
+            for (let step = 6; step <= (selectedMap === 'bridges' ? 27 : 18); step++) {
               const rx = bx + toCenter.x * step;
               const rz = bz + toCenter.z * step;
               addBlock(rx, 0, rz, 'wool', { team: tId });
@@ -2403,6 +2455,11 @@
         return false;
       }
 
+      function hasGroundAt(x, y, z) {
+        return !!(getBlock(Math.round(x + 0.3), y, Math.round(z + 0.3)) || getBlock(Math.round(x - 0.3), y, Math.round(z + 0.3)) ||
+                  getBlock(Math.round(x + 0.3), y, Math.round(z - 0.3)) || getBlock(Math.round(x - 0.3), y, Math.round(z - 0.3)));
+      }
+
       function moveEntityPhysics(ent, dt) {
         const r = 0.31;
         const h = 1.65;
@@ -2415,13 +2472,10 @@
 
         if (ent.isLocal && safeBridgeEnabled && ent.onGround) {
           const footY = Math.round(ent.pos.y - 0.5);
-          if (!getBlock(Math.round(nextX), footY, Math.round(ent.pos.z))) {
-            nextX = ent.pos.x;
-            ent.vel.x = 0;
-          }
-          if (!getBlock(Math.round(ent.pos.x), footY, Math.round(nextZ))) {
-            nextZ = ent.pos.z;
-            ent.vel.z = 0;
+          if (!hasGroundAt(nextX, footY, nextZ)) {
+            if (hasGroundAt(nextX, footY, ent.pos.z)) { nextZ = ent.pos.z; ent.vel.z = 0; }
+            else if (hasGroundAt(ent.pos.x, footY, nextZ)) { nextX = ent.pos.x; ent.vel.x = 0; }
+            else { nextX = ent.pos.x; nextZ = ent.pos.z; ent.vel.x = 0; ent.vel.z = 0; }
           }
         }
 
@@ -2446,10 +2500,15 @@
 
       let gameState = 'LOBBY';
       let selectedMode = 'solo';
-      let selectedDiff = 'pro';
+      let selectedMap = 'classic';
+      let mapChoice = 'random';
+      const MAP_IDS = ['random', 'classic', 'bridges', 'ruins', 'ring', 'pillars', 'archipelago', 'colosseum', 'storm'];
+      const MAP_NAMES = { random: 'Random', classic: 'Sky Classic', bridges: 'Sunset Bridges', ruins: 'Dusk Ruins', ring: 'Ice Ring', pillars: 'Pink Pillars', archipelago: 'Archipelago', colosseum: 'Colosseum', storm: 'Storm Drift' };
+      const MAP_THEME = { classic: [0x5bc0ff, 0x7dd3fc], bridges: [0xff9a5c, 0xfdba74], ruins: [0x6d5bd0, 0x9a8cf0], ring: [0x9be7ff, 0xcffafe], pillars: [0xf9a8d4, 0xfbcfe8], archipelago: [0x67e8f9, 0xa5f3fc], colosseum: [0xfbbf24, 0xfde68a], storm: [0x1e293b, 0x475569] };
+      let selectedDiff = 'casual';
       let matchTime = 0;
       let suddenDeathTriggered = false;
-      let camMode = 'third';
+      let camMode = 'first';
       let safeBridgeEnabled = true;
       let activeShopCat = 'blocks';
 
@@ -2521,7 +2580,7 @@
           attackCd: 0,
           walkCycle: 0,
           resources: {
-            iron: opts.isLocal ? 12 : 0,
+            iron: opts.isLocal ? 30 : 0,
             gold: 0,
             diamond: 0,
             emerald: 0
@@ -2554,6 +2613,7 @@
         c.pitch = 0;
         c.hp = c.maxHp;
         c.absorption = 0;
+        c.spawnProt = 2.0;
         c.alive = true;
         c.rig.root.visible = true;
         if (c.overhead) {
@@ -2593,7 +2653,7 @@
       }
 
       function addHotbarItem(c, item) {
-        const stackable = ['wool', 'planks', 'endstone', 'glass', 'obsidian', 'fireball', 'tnt', 'bridge_egg', 'pearl', 'gapple', 'magic_milk', 'arrow'];
+        const stackable = ['wool', 'planks', 'endstone', 'glass', 'obsidian', 'fireball', 'tnt', 'bridge_egg', 'pearl', 'gapple', 'magic_milk', 'arrow', 'speed_pot', 'jump_pot', 'wall', 'bed_armor'];
         if (stackable.includes(item.id)) {
           for (let i = 0; i < 9; i++) {
             if (c.hotbar[i] && c.hotbar[i].id === item.id) {
@@ -2638,6 +2698,7 @@
         document.getElementById('match-end-modal').classList.add('hidden');
         document.getElementById('game-hud').classList.remove('hidden');
 
+        selectedMap = mapChoice === 'random' ? MAP_IDS[1 + Math.floor(Math.random() * (MAP_IDS.length - 1))] : mapChoice;
         buildArena(selectedMode);
 
         teamStates = {};
@@ -2649,7 +2710,7 @@
         });
 
         combatants = [];
-        const names = ['ujangkendu67', 'albrilliantal', 'MustVivid5497', 'vvaffle, 'mysaitama!', 'mysasuke!', 'rifat4042'];
+        const names = ['ujangkendu67', 'albrilliantal', 'MustVivid5497', 'vvaffle', 'mysaitama!', 'mysasuke!', 'rifat4042'];
         const hats = ['spiky', 'headband', 'catears', 'crown', 'visor', 'knight'];
         let nIdx = 0;
 
@@ -2690,6 +2751,7 @@
         });
 
         syncSafeBridgeButton();
+        showBanner(MAP_NAMES[selectedMap].toUpperCase() + ' - PROTECT YOUR BED', 'linear-gradient(90deg,#0ea5e9,#2563eb)');
         updateTeamBar();
         updateResourceHUD();
         updateHotbarUI();
@@ -2740,6 +2802,15 @@
         }
       }
 
+      function fortifyBed(teamId, type) {
+        const spots = [];
+        for (const blk of voxelMap.values()) {
+          if (blk.type !== 'bed' || blk.bedTeam !== teamId) continue;
+          for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (let dy = 0; dy <= 1; dy++) spots.push([blk.x + dx, blk.y + dy, blk.z + dz]);
+        }
+        for (const [x, y, z] of spots) if (!getBlock(x, y, z)) addBlock(x, y, z, type, { team: teamId });
+      }
+
       function destroyBed(teamId, breaker) {
         const ts = teamStates[teamId];
         if (!ts || !ts.bedAlive) return;
@@ -2767,10 +2838,10 @@
       }
 
       function damageEntity(target, rawDmg, attacker, kbDir = null, kbMult = 1) {
-        if (!target.alive || gameState !== 'PLAYING') return;
+        if (!target.alive || gameState !== 'PLAYING' || target.spawnProt > 0) return;
 
         const armRed = [0, 0.20, 0.35, 0.52][target.armorTier] + teamStates[target.teamId].upgrades.armor * 0.10;
-        const dmg = Math.max(0.5, rawDmg * (1 - Math.min(0.78, armRed)) * (target.isLocal ? 1.2 : 1));
+        const dmg = Math.max(0.5, rawDmg * (1 - Math.min(0.78, armRed)) * (target.isLocal ? (selectedDiff === 'casual' ? 0.75 : selectedDiff === 'master' ? 1.2 : 1) : 1));
 
         let rem = dmg;
         if (target.absorption > 0) {
@@ -3032,12 +3103,12 @@
         }
 
         let target = null;
-        let bestDist = 4.0;
+        let bestDist = 4.5;
         for (const c of combatants) {
           if (c === localPlayer || !c.alive || c.teamId === localPlayer.teamId) continue;
           const diff = c.pos.clone().add(new THREE.Vector3(0, 0.9, 0)).sub(eye);
           const dist = diff.length();
-          if (dist < bestDist && diff.normalize().dot(dir) > 0.7) {
+          if (dist < bestDist && diff.normalize().dot(dir) > 0.5) {
             bestDist = dist;
             target = c;
           }
@@ -3100,6 +3171,34 @@
           return;
         }
 
+        if (slot.id === 'speed_pot' || slot.id === 'jump_pot') {
+          consumeHotbarSlot(localPlayer, 1);
+          if (slot.id === 'speed_pot') localPlayer.speedTimer = 30; else localPlayer.jumpTimer = 30;
+          sound.playBuy();
+          spawnDmgText(localPlayer.pos, slot.id === 'speed_pot' ? 'SPEED 30S' : 'JUMP BOOST 30S', '#38bdf8');
+          return;
+        }
+        if (slot.id === 'bed_armor') {
+          if (!teamStates[localPlayer.teamId].bedAlive) return;
+          consumeHotbarSlot(localPlayer, 1);
+          fortifyBed(localPlayer.teamId, 'endstone');
+          sound.playBuy();
+          showBanner('BED FORTIFIED', 'linear-gradient(90deg,#ca8a04,#a16207)');
+          return;
+        }
+        if (slot.id === 'wall') {
+          consumeHotbarSlot(localPlayer, 1);
+          const fx = Math.abs(dir.x) > Math.abs(dir.z) ? Math.sign(dir.x) : 0;
+          const fz = fx ? 0 : (Math.sign(dir.z) || 1);
+          const cx = Math.round(localPlayer.pos.x + fx * 2), cz = Math.round(localPlayer.pos.z + fz * 2);
+          const by = Math.round(localPlayer.pos.y - 0.5) + 1;
+          for (let w = -2; w <= 2; w++) for (let h = 0; h < 3; h++) {
+            const x = fx ? cx : cx + w, z = fx ? cz + w : cz;
+            if (!getBlock(x, by + h, z)) addBlock(x, by + h, z, 'wool', { team: localPlayer.teamId });
+          }
+          sound.playPlace();
+          return;
+        }
         const blocks = ['wool', 'planks', 'endstone', 'glass', 'obsidian', 'tnt'];
         if (blocks.includes(slot.id)) {
           const t = getPlacementTarget();
@@ -3188,6 +3287,16 @@
         if (bot.pos.distanceTo(team.base) < 9) {
           bot.resources.iron += dt * 1.6 * diffScale;
           bot.resources.gold += dt * 0.3 * diffScale;
+          if (bot.hp < bot.maxHp) {
+            bot.hp = Math.min(bot.maxHp, bot.hp + dt * 0.8);
+            bot.ai.rd = (bot.ai.rd || 0) - dt;
+            if (bot.ai.rd <= 0) { bot.ai.rd = 0.5; if (bot.overhead) bot.overhead.redraw(bot.hp, bot.maxHp); }
+          }
+        }
+        bot.ai.appleCd = (bot.ai.appleCd || 0) - dt;
+        if (bot.hp < bot.maxHp * 0.4 && bot.resources.gold >= 3 && bot.ai.appleCd <= 0) {
+          bot.resources.gold -= 3; bot.hp = Math.min(bot.maxHp, bot.hp + 8); bot.ai.appleCd = 12;
+          if (bot.overhead) bot.overhead.redraw(bot.hp, bot.maxHp);
         }
 
         if (bot.swordTier === 0 && bot.resources.iron >= 10) {
@@ -3201,6 +3310,9 @@
           bot.resources.gold -= 12; bot.armorTier = 2; bot.rig.setArmorTier(2);
         }
 
+        if (selectedDiff !== 'casual' && ts.bedAlive && !ts.fortified && bot.resources.iron >= 20 && bot.pos.distanceTo(team.base) < 9) {
+          bot.resources.iron -= 20; ts.fortified = true; fortifyBed(bot.teamId, 'endstone');
+        }
         let enemy = null;
         let eDist = 15;
         for (const o of combatants) {
@@ -3225,8 +3337,13 @@
           if (!bot.ai.goal || bot.ai.timer <= 0 || bot.pos.distanceTo(bot.ai.goal) < 2.2) {
             bot.ai.timer = 6 + Math.random() * 5;
             const rivals = TEAM_ORDER.filter(t => t !== bot.teamId && teamStates[t].bedAlive);
-            if (rivals.length > 0 && Math.random() < 0.74) {
-              goal = TEAMS[rivals[Math.floor(Math.random() * rivals.length)]].base.clone();
+            const rr = Math.random();
+            if (rivals.length > 0 && rr < 0.6) {
+              rivals.sort((a, b) => TEAMS[a].base.distanceTo(bot.pos) - TEAMS[b].base.distanceTo(bot.pos));
+              goal = TEAMS[rivals[Math.random() < 0.7 ? 0 : Math.floor(Math.random() * rivals.length)]].base.clone();
+            } else if (rr < 0.82) {
+              const di = [[18, -18], [18, 18], [-18, 18], [-18, -18]][Math.floor(Math.random() * 4)];
+              goal = new THREE.Vector3(di[0], 1, di[1]);
             } else {
               goal = new THREE.Vector3((Math.random() - 0.5) * 6, 1, (Math.random() - 0.5) * 6);
             }
@@ -3236,6 +3353,7 @@
           }
         }
 
+        if (bot.hp < bot.maxHp * 0.3 && ts.bedAlive && bot.pos.distanceTo(team.base) > 5) goal = team.base.clone();
         if (ts.bedAlive && bot.pos.distanceTo(team.base) < 6 && Math.random() < dt * 0.65) {
           const bx = Math.round(team.base.x);
           const bz = Math.round(team.base.z);
@@ -3276,7 +3394,7 @@
           }
 
           bot.ai.bridgeCd -= dt;
-          if (!groundBlk && bot.onGround) {
+          if (!hasGroundAt(bot.pos.x + dir.x * 0.85, fy, bot.pos.z + dir.z * 0.85) && bot.onGround) {
             let ws = bot.hotbar.find(h => h && h.id === 'wool');
             if ((!ws || ws.count < 6) && bot.resources.iron >= 4) {
               bot.resources.iron -= 4;
@@ -3287,6 +3405,8 @@
               if (bot.ai.bridgeCd <= 0) {
                 ws.count--;
                 addBlock(ax, fy, az, 'wool', { team: bot.teamId });
+                const cx0 = Math.round(bot.pos.x), cz0 = Math.round(bot.pos.z);
+                if (ax !== cx0 && az !== cz0 && !getBlock(ax, fy, cz0) && ws.count > 0) { ws.count--; addBlock(ax, fy, cz0, 'wool', { team: bot.teamId }); }
                 bot.ai.bridgeCd = selectedDiff === 'master' ? 0.13 : selectedDiff === 'pro' ? 0.2 : 0.32;
               }
             } else {
@@ -3315,7 +3435,7 @@
         if (enemy && eDist < 3.4 && bot.attackCd <= 0) {
           bot.attackCd = selectedDiff === 'master' ? 0.55 : 0.8;
           bot.rig.rightArmPivot.rotation.x = -1.3;
-          const dmg = [3.5, 4.5, 6.0, 7.5][bot.swordTier] * (selectedDiff === 'master' ? 1.25 : selectedDiff === 'casual' ? 0.8 : 1.05);
+          const dmg = [3.5, 4.5, 6.0, 7.5][bot.swordTier] * (selectedDiff === 'master' ? 1.25 : selectedDiff === 'casual' ? 0.6 : 1.05);
           const kd = enemy.pos.clone().sub(bot.pos).setY(0).normalize();
           damageEntity(enemy, dmg, bot, kd, 1.0);
         }
@@ -3618,7 +3738,7 @@
 
       function renderLobby() {
         const lv = 1 + Math.floor(saveData.xp / 250);
-        document.getElementById('lobby-stats-line').textContent = `LV. ${lv} - ${saveData.wins} Wins - ${saveData.bedsBroken} Beds`;
+        document.getElementById('lobby-stats-line').textContent = `LV. ${lv} - ${saveData.wins} Wins - ${saveData.bedsBroken} Beds - ${saveData.kills} Kills`;
         document.getElementById('lobby-coins').textContent = saveData.coins;
         document.getElementById('lobby-gcubes').textContent = saveData.gcubes;
         document.getElementById('player-name-input').value = saveData.name;
@@ -3852,7 +3972,7 @@
 
       const triggerJump = () => {
         if (localPlayer && localPlayer.alive && localPlayer.onGround) {
-          localPlayer.vel.y = 8.9;
+          localPlayer.vel.y = 8.9 * (localPlayer.jumpTimer > 0 ? 1.3 : 1);
           localPlayer.onGround = false;
         }
       };
@@ -3981,6 +4101,51 @@
         document.getElementById('preview-nameplate').textContent = saveData.name;
       });
 
+      function mapThumb(id) {
+        const c = document.createElement('canvas');
+        c.width = 72; c.height = 44; c.style.cssText = 'width:100%;border-radius:8px;display:block';
+        const x = c.getContext('2d');
+        if (id === 'random') {
+          x.fillStyle = '#1e293b'; x.fillRect(0, 0, 72, 44);
+          x.fillStyle = '#fde047'; x.font = 'bold 28px sans-serif'; x.textAlign = 'center'; x.fillText('?', 36, 34);
+          return c;
+        }
+        const th = MAP_THEME[id], hex = n => '#' + n.toString(16).padStart(6, '0');
+        const g = x.createLinearGradient(0, 0, 0, 44); g.addColorStop(0, hex(th[0])); g.addColorStop(1, hex(th[1]));
+        x.fillStyle = g; x.fillRect(0, 0, 72, 44);
+        const box = (cx, cy, w, h, col) => { x.fillStyle = col; x.fillRect(cx - w / 2, cy - h / 2, w, h); };
+        const dot = (cx, cy, r, col) => { x.fillStyle = col; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
+        const bases = [[36, 38, '#ef4444'], [36, 6, '#3b82f6'], [65, 22, '#22c55e'], [7, 22, '#eab308']];
+        if (id === 'bridges') bases.forEach(([a, b, col]) => { x.strokeStyle = col; x.lineWidth = 2; x.beginPath(); x.moveTo(a, b); x.lineTo(36, 22); x.stroke(); });
+        if (id === 'ring') { x.strokeStyle = '#e2e8f0'; x.lineWidth = 2; x.strokeRect(22, 12, 28, 20); x.beginPath(); x.moveTo(36, 12); x.lineTo(36, 32); x.moveTo(22, 22); x.lineTo(50, 22); x.stroke(); }
+        if (id === 'colosseum') { x.strokeStyle = '#f8fafc'; x.lineWidth = 3; x.beginPath(); x.arc(36, 22, 10, 0, 7); x.stroke(); }
+        dot(36, 22, 7, '#4ade80');
+        [[22, 12], [50, 12], [22, 32], [50, 32]].forEach(([a, b]) => box(a, b, 8, 6, '#22d3ee'));
+        bases.forEach(([a, b, col]) => { box(a, b, 14, 7, '#4ade80'); box(a, b, 6, 3, col); });
+        let sd = 5; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        const scatter = (n, col, sz) => { for (let i = 0; i < n; i++) box(10 + r() * 52, 8 + r() * 28, sz, sz, col); };
+        if (id === 'ruins') scatter(12, '#cbd5e1', 4);
+        if (id === 'archipelago') scatter(18, '#86efac', 5);
+        if (id === 'storm') scatter(12, '#94a3b8', 4);
+        if (id === 'pillars') for (let i = 0; i < 8; i++) dot(36 + Math.cos(i * 0.785) * 19, 22 + Math.sin(i * 0.785) * 12, 2.4, '#f472b6');
+        return c;
+      }
+      const mapGrid = document.getElementById('map-grid');
+      mapGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      MAP_IDS.forEach(id => {
+        const b = document.createElement('button');
+        b.className = 'choice-btn' + (id === mapChoice ? ' active' : '');
+        b.dataset.map = id;
+        b.style.cssText = 'flex-direction:column;padding:4px;gap:3px;font-size:9px';
+        b.appendChild(mapThumb(id));
+        const l = document.createElement('span'); l.textContent = MAP_NAMES[id]; b.appendChild(l);
+        b.onclick = () => {
+          mapChoice = id;
+          mapGrid.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          if (id !== 'random') { scene.background.setHex(MAP_THEME[id][0]); scene.fog.color.setHex(MAP_THEME[id][1]); }
+        };
+        mapGrid.appendChild(b);
+      });
       document.getElementById('play-btn').onclick = startMatch;
       document.getElementById('close-item-shop').onclick = closeItemShop;
       document.getElementById('close-upg-shop').onclick = closeUpgradeShop;
@@ -4106,7 +4271,7 @@
         matchTime += dt;
         document.getElementById('match-timer').textContent = formatClock(matchTime);
 
-        const remSudden = Math.max(0, 300 - matchTime);
+        const remSudden = Math.max(0, SET.sd - matchTime);
         if (remSudden > 0) {
           document.getElementById('sudden-death-label').textContent = `Beds Break: ${formatClock(remSudden)}`;
         } else {
@@ -4189,7 +4354,9 @@
 
           const sprint = (keys['ShiftLeft'] || keys['ShiftRight'] || joyVec.y > 0.82 || (SET.autoSprint && mf > 0.2)) && mf > 0.2;
           const baseSpd = 5.4 * (1 + saveData.talents.bridgeSpeed * 0.08) * (localPlayer.slowTimer > 0 ? 0.55 : 1);
-          const spd = sprint ? baseSpd * 1.25 : baseSpd;
+          if (localPlayer.speedTimer > 0) localPlayer.speedTimer -= dt;
+          if (localPlayer.jumpTimer > 0) localPlayer.jumpTimer -= dt;
+          const spd = (sprint ? baseSpd * 1.25 : baseSpd) * (localPlayer.speedTimer > 0 ? 1.35 : 1);
 
           const targetFov = SET.fov + (sprint ? 6 : 0);
           camera.fov += (targetFov - camera.fov) * dt * 10;
@@ -4245,6 +4412,7 @@
             continue;
           }
 
+          if (c.spawnProt > 0) c.spawnProt -= dt;
           if (!c.isLocal) updateBot(c, dt);
           moveEntityPhysics(c, dt);
 
@@ -4463,11 +4631,80 @@
       window.addEventListener('resize', handleResize);
       window.addEventListener('orientationchange', () => setTimeout(handleResize, 120));
 
+      {
+        const st = document.createElement('style');
+        st.textContent = `
+          #mobile-action-pad{gap:6px}
+          .thumb-sm{width:40px;height:40px;font-size:8px}
+          .thumb-md{width:46px;height:46px;font-size:9px}
+          .thumb-lg-attack{width:56px;height:56px}
+          .thumb-lg-place{width:52px;height:52px}
+          .thumb-btn svg{width:16px;height:16px}
+          .res-bar{padding:3px 8px;gap:7px;font-size:11px}
+          .team-bar{padding:3px 6px}.team-pill{padding:2px 6px;font-size:10px}
+          .timer-pill{padding:3px 9px;font-size:11px}
+          #hotbar{padding:3px;gap:3px;max-width:400px}
+          .slot-btn{max-height:38px}
+          #radar-wrap{width:62px;height:62px;opacity:.9}
+          #kill-feed{max-width:170px}
+          .kf-item{font-size:10px;padding:3px 7px;opacity:.9}
+          .hud-mini-btn{width:30px;height:30px}
+          .lobby-col-right.collapsed{display:none}
+          .lobby-footer{gap:10px}
+        `;
+        document.head.appendChild(st);
+        const rc = document.querySelector('.lobby-col-right');
+        rc.classList.add('collapsed');
+        const cb = document.createElement('button');
+        cb.className = 'btn-arcade'; cb.textContent = 'CUSTOMIZE';
+        cb.style.cssText = 'padding:12px 16px;border-radius:16px;background:linear-gradient(180deg,#38bdf8,#2563eb);color:#fff;font-size:13px;border:2px solid #bae6fd;flex:none';
+        cb.onclick = () => { rc.classList.toggle('collapsed'); cb.textContent = rc.classList.contains('collapsed') ? 'CUSTOMIZE' : 'CLOSE'; };
+        const ft = document.querySelector('.lobby-footer');
+        ft.insertBefore(cb, document.getElementById('play-btn'));
+      }
+
+      function toast(msg) {
+        const t = document.createElement('div');
+        t.className = 'panel text-shadow';
+        t.style.cssText = 'position:fixed;top:14%;left:50%;transform:translateX(-50%);z-index:70;padding:10px 18px;border-radius:14px;font-weight:900;font-size:14px;color:#fde047;pointer-events:none;text-align:center';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3200);
+      }
+      {
+        const today = new Date().toDateString();
+        if (saveData.lastLogin !== today) {
+          const yest = new Date(Date.now() - 864e5).toDateString();
+          saveData.streak = saveData.lastLogin === yest ? (saveData.streak || 0) + 1 : 1;
+          const bonus = 50 + Math.min(saveData.streak, 7) * 25;
+          saveData.coins += bonus;
+          saveData.lastLogin = today;
+          persistSave();
+          setTimeout(() => { renderLobby(); toast(`Daily login day ${saveData.streak}: +${bonus} coins`); }, 700);
+        }
+        const kp = document.createElement('span');
+        kp.style.cssText = 'color:#fda4af;font-weight:800;';
+        document.querySelector('.timer-pill').appendChild(kp);
+        let lp = null, lk = 0, streak = 0, wasAlive = true;
+        setInterval(() => {
+          if (gameState !== 'PLAYING' || !localPlayer) return;
+          if (lp !== localPlayer) { lp = localPlayer; lk = 0; streak = 0; wasAlive = true; }
+          kp.textContent = ` | K ${localPlayer.kills}  B ${localPlayer.bedsBroken}`;
+          if (localPlayer.alive !== wasAlive) { if (!localPlayer.alive) streak = 0; wasAlive = localPlayer.alive; }
+          if (localPlayer.kills > lk) {
+            streak += localPlayer.kills - lk; lk = localPlayer.kills;
+            const names = ['ELIMINATION', 'DOUBLE KILL', 'TRIPLE KILL', 'RAMPAGE'];
+            showBanner(`${names[Math.min(streak, 4) - 1]} x${streak}`, 'linear-gradient(90deg,#f59e0b,#dc2626)');
+            sound.playBuy();
+          }
+        }, 150);
+      }
+
       (function buildSettings() {
         const gear = '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.4" fill="none" stroke="#fff" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
         const m = document.createElement('div');
         m.id = 'settings-modal'; m.className = 'modal-backdrop hidden'; m.style.zIndex = 60; m.style.touchAction = 'auto';
-        const rows = [['touch', 'Touch Look Sensitivity', 0.5, 6, 0.1], ['mouse', 'Mouse Sensitivity', 0.3, 5, 0.1], ['fov', 'Field of View', 60, 100, 1], ['pad', 'Button Size', 0.7, 1.4, 0.05]];
+        const rows = [['touch', 'Touch Look Sensitivity', 0.5, 6, 0.1], ['mouse', 'Mouse Sensitivity', 0.3, 5, 0.1], ['fov', 'Field of View', 60, 100, 1], ['pad', 'Button Size', 0.6, 1.4, 0.05], ['sd', 'Beds Break Timer (sec)', 120, 600, 30]];
         const tog = [['autoSprint', 'Auto Sprint'], ['autoBridge', 'Auto Bridge (hold blocks)']];
         m.innerHTML = '<div class="modal-card panel" style="max-width:400px;border-color:#fbbf24"><div class="modal-head" style="background:linear-gradient(90deg,#f59e0b,#ea580c);color:#0f172a"><div style="font-weight:900;font-size:16px">SETTINGS</div><button id="set-close" class="icon-btn" style="width:34px;height:34px">' + svgIcon('close', 16) + '</button></div><div style="padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto">' +
           rows.map(r => '<label style="font-size:12px;font-weight:800;color:#cbd5e1">' + r[1] + ': <b id="sv-' + r[0] + '" style="color:#fde047"></b><input type="range" data-k="' + r[0] + '" min="' + r[2] + '" max="' + r[3] + '" step="' + r[4] + '" style="width:100%;touch-action:pan-x;margin-top:6px"></label>').join('') +
