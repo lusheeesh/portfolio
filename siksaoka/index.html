@@ -1,0 +1,2954 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>SIKSA OKA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* Global mobile-first touch and highlight prevention */
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: #090d16;
+      color: #f8fafc;
+      overscroll-behavior: none;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Hide scrollbars cleanly while keeping smooth horizontal touch scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Glassmorphic HUD panel styling */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-color: rgba(148, 163, 184, 0.16);
+    }
+
+    /* Subtle pulse for active unlock mode or combo */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.35); }
+      50% { box-shadow: 0 0 14px 2px rgba(6, 182, 212, 0.45); }
+    }
+    .active-tool-card {
+      animation: pulseGlow 2.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col bg-[#090d16] text-slate-100 select-none">
+
+  <!-- TOP HUD HEADER -->
+  <header class="glass-panel relative z-20 border-b px-3 py-2 sm:px-5 sm:py-2.5 shrink-0">
+    <div class="max-w-6xl mx-auto flex flex-col gap-2">
+      <!-- Row 1: Title, Currency & Live Damage/Combo -->
+      <div class="flex items-center justify-between gap-2">
+        <!-- Brand / Title -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-rose-500/20 border border-cyan-400/30 flex items-center justify-center shrink-0 shadow-inner">
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="3" />
+              <path d="M12 8v6" />
+              <path d="M7 11l5 1 5-1" />
+              <path d="M9 21l3-7 3 7" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-cyan-400 bg-clip-text text-transparent truncate">
+                SIKSA OKA
+              </h1>
+              <span class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-500/25">
+                Sandbox
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 truncate leading-tight">Target: <span class="text-cyan-300 font-semibold">Oka</span></p>
+          </div>
+        </div>
+
+        <!-- Stats Pills: Koin & Kombo/Damage -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <!-- Combo Badge (auto highlights during active combos) -->
+          <div id="combo-pill" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/70 transition-all duration-150">
+            <svg class="w-4 h-4 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            <div class="flex flex-col leading-none">
+              <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Kombo</span>
+              <span id="combo-value" class="text-xs sm:text-sm font-extrabold text-rose-400 tabular-nums">x1</span>
+            </div>
+          </div>
+
+          <!-- Koin Counter -->
+          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/30 shadow-sm">
+            <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v10" />
+              <path d="M9.5 9.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2-1.1 2-2.5 2-2.5.9-2.5 2 1.1 2 2.5 2 2.5-.9 2.5-2" />
+            </svg>
+            <div class="flex flex-col leading-none">
+              <span class="text-[9px] uppercase tracking-wider text-amber-300/80 font-semibold">Koin</span>
+              <span id="coin-value" class="text-xs sm:text-sm font-extrabold text-amber-400 tabular-nums">250</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Quick Action Buttons -->
+      <div class="flex items-center justify-between gap-1.5 sm:gap-2">
+        <!-- Audio Toggle -->
+        <button id="btn-audio" type="button" class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 active:scale-95 border border-slate-700/80 text-xs font-semibold text-slate-200 transition">
+          <svg id="icon-audio-on" class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+          </svg>
+          <svg id="icon-audio-off" class="w-4 h-4 text-slate-500 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
+          </svg>
+          <span id="label-audio">Suara</span>
+        </button>
+
+        <!-- Heal / Reset Oka Button -->
+        <button id="btn-heal" type="button" class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:scale-95 border border-emerald-500/35 text-xs font-bold text-emerald-300 transition">
+          <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+          </svg>
+          <span>Pulihkan Oka</span>
+        </button>
+
+        <!-- Unlock All Sandbox Toggle -->
+        <button id="btn-unlock-all" type="button" class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 border border-amber-500/40 text-xs font-bold text-amber-300 transition">
+          <svg id="icon-unlock" class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+          </svg>
+          <span id="label-unlock-all">Buka Semua</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN INTERACTIVE ARENA -->
+  <main id="arena-container" class="relative flex-1 w-full overflow-hidden bg-[#090d16]">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Floating Active Weapon Tip Pill -->
+    <div class="pointer-events-none absolute top-2.5 left-1/2 -translate-x-1/2 z-10 w-[92%] max-w-md flex justify-center">
+      <div id="tool-hint-pill" class="px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/70 text-[11px] sm:text-xs text-slate-300 font-medium shadow-lg flex items-center gap-2 truncate">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+        <span id="tool-hint-text" class="truncate">Tangan: Sentuh dan seret Oka lalu banting ke dinding!</span>
+      </div>
+    </div>
+
+    <!-- Total Damage Counter subtle overlay -->
+    <div class="pointer-events-none absolute top-11 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400">
+      <span>Total Luka:</span>
+      <span id="total-damage-value" class="font-bold text-slate-200 tabular-nums">0</span>
+    </div>
+
+    <!-- Non-intrusive Toast Notification -->
+    <div id="toast-banner" class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 z-30 opacity-0 translate-y-2 transition-all duration-200">
+      <div id="toast-text" class="px-4 py-2 rounded-xl bg-slate-900/95 border border-cyan-500/40 text-xs font-bold text-cyan-200 shadow-xl whitespace-nowrap">
+        Senjata terbuka!
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM COLLAPSIBLE / SCROLLABLE WEAPON DOCK -->
+  <section id="weapon-dock" class="glass-panel relative z-20 border-t shrink-0 transition-all duration-200">
+    <div class="max-w-6xl mx-auto">
+      <!-- Category Tabs + Collapse Handle -->
+      <div class="flex items-center justify-between px-2.5 pt-2 pb-1.5 gap-1 border-b border-slate-800/80">
+        <div id="category-tabs" class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <button id="btn-toggle-dock" type="button" aria-label="Sembunyikan atau tampilkan panel senjata" class="ml-1 p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/70 shrink-0 active:scale-95 transition">
+          <svg id="icon-dock-chevron" class="w-4 h-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Horizontal Weapon Cards List -->
+      <div id="weapon-list-wrapper" class="px-2.5 py-2.5 overflow-hidden transition-all duration-200">
+        <div id="weapon-cards" class="flex items-stretch gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      'use strict';
+
+      /* =========================================================================
+       * 1. PROCEDURAL WEB AUDIO API SOUND ENGINE (ZERO EXTERNAL AUDIO FILES)
+       * ========================================================================= */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.enabled = true;
+          this.lastVoiceTime = 0;
+          this.lastChainsawTime = 0;
+          this.lastLaserTime = 0;
+          this.lastFlameTime = 0;
+        }
+
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              this.ctx = new AudioCtx();
+            }
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+        }
+
+        toggle() {
+          this.enabled = !this.enabled;
+          if (this.enabled) this.init();
+          return this.enabled;
+        }
+
+        createNoiseBuffer(duration = 0.5) {
+          if (!this.ctx) return null;
+          const sampleRate = this.ctx.sampleRate;
+          const length = Math.floor(sampleRate * duration);
+          const buffer = this.ctx.createBuffer(1, length, sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < length; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          return buffer;
+        }
+
+        playSlap(intensity = 1) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          // Sharp slap noise burst
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(0.16);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1100, now);
+          filter.frequency.exponentialRampToValueAtTime(320, now + 0.14);
+          filter.Q.value = 1.4;
+
+          const gain = this.ctx.createGain();
+          const vol = Math.min(0.65, 0.3 + intensity * 0.25);
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(now);
+
+          // Low punch thud
+          const osc = this.ctx.createOscillator();
+          const oscGain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.exponentialRampToValueAtTime(42, now + 0.14);
+          oscGain.gain.setValueAtTime(vol * 0.9, now);
+          oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+          osc.connect(oscGain);
+          oscGain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.16);
+        }
+
+        playHammer() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          // Heavy sub thud
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(28, now + 0.32);
+          gain.gain.setValueAtTime(0.85, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+
+          // Metallic clang overtone
+          const clang = this.ctx.createOscillator();
+          const cGain = this.ctx.createGain();
+          clang.type = 'square';
+          clang.frequency.setValueAtTime(520, now);
+          clang.frequency.exponentialRampToValueAtTime(190, now + 0.18);
+          cGain.gain.setValueAtTime(0.22, now);
+          cGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+          clang.connect(cGain);
+          cGain.connect(this.ctx.destination);
+          clang.start(now);
+          clang.stop(now + 0.2);
+        }
+
+        playBlade(metallic = false) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          // Air whoosh
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(0.18);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(1800, now);
+          filter.frequency.exponentialRampToValueAtTime(600, now + 0.16);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.32, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(now);
+
+          if (metallic) {
+            const freqs = [2450, 3680];
+            freqs.forEach((f) => {
+              const osc = this.ctx.createOscillator();
+              const g = this.ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(f, now);
+              osc.frequency.exponentialRampToValueAtTime(f * 0.88, now + 0.22);
+              g.gain.setValueAtTime(0.14, now);
+              g.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+              osc.connect(g);
+              g.connect(this.ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.25);
+            });
+          }
+        }
+
+        playChainsawTick() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          if (now - this.lastChainsawTime < 0.065) return;
+          this.lastChainsawTime = now;
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(95 + Math.random() * 45, now);
+          osc.frequency.linearRampToValueAtTime(140 + Math.random() * 40, now + 0.06);
+
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        }
+
+        playGunshot(heavy = false) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const dur = heavy ? 0.36 : 0.18;
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(dur);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(heavy ? 2400 : 3400, now);
+          filter.frequency.exponentialRampToValueAtTime(180, now + dur);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(heavy ? 0.65 : 0.42, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(now);
+
+          const punch = this.ctx.createOscillator();
+          const pGain = this.ctx.createGain();
+          punch.type = 'sine';
+          punch.frequency.setValueAtTime(heavy ? 150 : 210, now);
+          punch.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+          pGain.gain.setValueAtTime(heavy ? 0.6 : 0.35, now);
+          pGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+          punch.connect(pGain);
+          pGain.connect(this.ctx.destination);
+          punch.start(now);
+          punch.stop(now + 0.14);
+        }
+
+        playLaserTick() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          if (now - this.lastLaserTime < 0.07) return;
+          this.lastLaserTime = now;
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(480 + Math.random() * 60, now);
+          osc.frequency.exponentialRampToValueAtTime(290, now + 0.07);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        }
+
+        playExplosion() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          // Sub-bass boom
+          const sub = this.ctx.createOscillator();
+          const subGain = this.ctx.createGain();
+          sub.type = 'sine';
+          sub.frequency.setValueAtTime(115, now);
+          sub.frequency.exponentialRampToValueAtTime(22, now + 0.65);
+          subGain.gain.setValueAtTime(0.95, now);
+          subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.68);
+          sub.connect(subGain);
+          subGain.connect(this.ctx.destination);
+          sub.start(now);
+          sub.stop(now + 0.7);
+
+          // Roaring explosion noise
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(0.75);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1200, now);
+          filter.frequency.exponentialRampToValueAtTime(95, now + 0.72);
+
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.75, now);
+          nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.74);
+
+          noise.connect(filter);
+          filter.connect(nGain);
+          nGain.connect(this.ctx.destination);
+          noise.start(now);
+        }
+
+        playFlameTick() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          if (now - this.lastFlameTime < 0.08) return;
+          this.lastFlameTime = now;
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(0.12);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(420 + Math.random() * 200, now);
+          filter.Q.value = 0.8;
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.24, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(now);
+        }
+
+        playLightning() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          // Electric zap crackle
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.createNoiseBuffer(0.45);
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(2800, now);
+          filter.frequency.exponentialRampToValueAtTime(180, now + 0.42);
+          filter.Q.value = 2.0;
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.7, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(now);
+
+          // Thunder rumble
+          const osc = this.ctx.createOscillator();
+          const oGain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(95, now);
+          osc.frequency.exponentialRampToValueAtTime(30, now + 0.48);
+          oGain.gain.setValueAtTime(0.45, now);
+          oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.connect(oGain);
+          oGain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.52);
+        }
+
+        playBlackHole() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(48, now + 0.6);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.66);
+        }
+
+        playCoin() {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(987.77, now); // B5
+          osc.frequency.setValueAtTime(1318.51, now + 0.06); // E6
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+
+        playOkaVoice(pitchHigh = false) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          if (now - this.lastVoiceTime < 0.35) return;
+          this.lastVoiceTime = now;
+
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          const baseFreq = pitchHigh ? 360 + Math.random() * 90 : 230 + Math.random() * 70;
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.linearRampToValueAtTime(baseFreq * 1.28, now + 0.07);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.72, now + 0.2);
+
+          filter.type = 'bandpass';
+          filter.frequency.value = 900;
+          filter.Q.value = 2.2;
+
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        }
+      }
+
+      const sound = new SoundEngine();
+
+      /* =========================================================================
+       * 2. WEAPON & CATEGORY CATALOG (100% BAHASA INDONESIA, CRISP SVG ICONS)
+       * ========================================================================= */
+      const CATEGORIES = [
+        { id: 'semua', label: 'Semua' },
+        { id: 'pukul', label: 'Pukul' },
+        { id: 'tajam', label: 'Tajam' },
+        { id: 'senjata', label: 'Senjata' },
+        { id: 'ledakan', label: 'Ledakan' }
+      ];
+
+      const WEAPONS = [
+        // --- KATEGORI 1: PUKUL ---
+        {
+          id: 'hand',
+          name: 'Tangan',
+          category: 'pukul',
+          cost: 0,
+          hint: 'Tangan: Sentuh dan seret Oka lalu banting ke dinding atau lantai!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`
+        },
+        {
+          id: 'slap',
+          name: 'Tamparan',
+          category: 'pukul',
+          cost: 0,
+          hint: 'Tamparan: Ketuk di dekat Oka untuk tamparan super kencang!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/><path d="M7 6h4"/></svg>`
+        },
+        {
+          id: 'hammer',
+          name: 'Palu Godam',
+          category: 'pukul',
+          cost: 150,
+          hint: 'Palu Godam: Ketuk di dekat Oka untuk hantaman palu raksasa!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></svg>`
+        },
+        {
+          id: 'chainsaw',
+          name: 'Gergaji Mesin',
+          category: 'pukul',
+          cost: 350,
+          hint: 'Gergaji Mesin: Tekan dan tahan lalu geserkan ke tubuh Oka!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="8" height="8" rx="2"/><path d="M10 11h9a2 2 0 0 1 0 4h-9"/><path d="M5 9V6h4v3"/><path d="M13 9v2"/><path d="M16 9v2"/><path d="M13 15v2"/><path d="M16 15v2"/></svg>`
+        },
+
+        // --- KATEGORI 2: TAJAM ---
+        {
+          id: 'knife',
+          name: 'Pisau Lipat',
+          category: 'tajam',
+          cost: 0,
+          hint: 'Pisau Lipat: Geser untuk menyayat atau ketuk Oka untuk menusuk!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>`
+        },
+        {
+          id: 'shuriken',
+          name: 'Bintang Ninja',
+          category: 'tajam',
+          cost: 200,
+          hint: 'Bintang Ninja: Ketuk atau tahan untuk melempar shuriken menancap!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5 12 2"/><circle cx="12" cy="12" r="2"/></svg>`
+        },
+        {
+          id: 'spear',
+          name: 'Tombak',
+          category: 'tajam',
+          cost: 450,
+          hint: 'Tombak: Ketuk untuk menembakkan tombak yang mengunci Oka ke dinding!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="19" y2="5"/><polygon points="15 4 20 4 20 9 17 7 15 4"/></svg>`
+        },
+        {
+          id: 'spikes',
+          name: 'Jebakan Duri',
+          category: 'tajam',
+          cost: 600,
+          hint: 'Jebakan Duri: Ketuk lantai atau dinding untuk memasang ranjau duri!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20l3-10 3 10"/><path d="M9 20l3-12 3 12"/><path d="M14 20l3-10 3 10"/></svg>`
+        },
+
+        // --- KATEGORI 3: SENJATA ---
+        {
+          id: 'pistol',
+          name: 'Pistol 9mm',
+          category: 'senjata',
+          cost: 250,
+          hint: 'Pistol 9mm: Ketuk layar untuk menembak Oka dengan cepat!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h16l2 3v3h-6l-2 7H8l2-7H3V7z"/><path d="M13 13v2"/></svg>`
+        },
+        {
+          id: 'minigun',
+          name: 'Senapan Mesin',
+          category: 'senjata',
+          cost: 750,
+          hint: 'Senapan Mesin: Tekan dan tahan untuk memberondong Oka di udara!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="9" height="8" rx="1.5"/><line x1="11" y1="9" x2="22" y2="9"/><line x1="11" y1="12" x2="22" y2="12"/><line x1="11" y1="15" x2="22" y2="15"/><line x1="18" y1="7" x2="18" y2="17"/></svg>`
+        },
+        {
+          id: 'shotgun',
+          name: 'Shotgun',
+          category: 'senjata',
+          cost: 950,
+          hint: 'Shotgun: Ketuk untuk tembakan peluru sebar berdaya dorong tinggi!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l5-3h15v3H11l-3 4H4l-2-4z"/><line x1="13" y1="9" x2="22" y2="9"/></svg>`
+        },
+        {
+          id: 'laser',
+          name: 'Laser Sinar',
+          category: 'senjata',
+          cost: 1300,
+          hint: 'Laser Sinar: Tekan dan tahan untuk menembakkan sinar plasma panas!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><line x1="9" y1="12" x2="22" y2="12"/><path d="M15 7l3 5-3 5"/></svg>`
+        },
+
+        // --- KATEGORI 4: LEDAKAN ---
+        {
+          id: 'grenade',
+          name: 'Granat',
+          category: 'ledakan',
+          cost: 500,
+          hint: 'Granat: Ketuk untuk melempar granat waktu yang memantul lalu meledak!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="7"/><path d="M10 7V4h4v3"/><path d="M14 5h3a2 2 0 0 1 2 2v2"/></svg>`
+        },
+        {
+          id: 'rpg',
+          name: 'Peluncur Roket',
+          category: 'ledakan',
+          cost: 1100,
+          hint: 'Peluncur Roket: Ketuk target untuk meluncurkan rudal berdaya ledak besar!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>`
+        },
+        {
+          id: 'flamethrower',
+          name: 'Penyembur Api',
+          category: 'ledakan',
+          cost: 1500,
+          hint: 'Penyembur Api: Tekan dan tahan untuk membakar Oka hingga panik!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`
+        },
+        {
+          id: 'lightning',
+          name: 'Petir Zeus',
+          category: 'ledakan',
+          cost: 1800,
+          hint: 'Petir Zeus: Ketuk layar untuk menyambar Oka dengan petir tegangan tinggi!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+        },
+        {
+          id: 'blackhole',
+          name: 'Lubang Hitam',
+          category: 'ledakan',
+          cost: 2200,
+          hint: 'Lubang Hitam: Ketuk untuk memunculkan pusaran gravitasi penghisap!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3a9 9 0 0 1 9 9"/><path d="M21 12a9 9 0 0 1-9 9"/><path d="M12 21a9 9 0 0 1-9-9"/><path d="M3 12a9 9 0 0 1 9-9"/></svg>`
+        },
+        {
+          id: 'meteor',
+          name: 'Hujan Meteor',
+          category: 'ledakan',
+          cost: 2800,
+          hint: 'Hujan Meteor: Ketuk untuk memanggil hujan meteor membara dari langit!',
+          svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><path d="M14 4h6v6"/><circle cx="7.5" cy="16.5" r="3.5"/></svg>`
+        }
+      ];
+
+      /* =========================================================================
+       * 3. INDONESIAN SPEECH LINES FOR OKA
+       * ========================================================================= */
+      const OKA_QUOTES = {
+        general: [
+          'Aduh sakit woi!',
+          'Telape!',
+          'Stop ko pantat!',
+          'cuki!',
+          'WOI!',
+          'Puki!',
+          'Woi pelan-pelan!',
+          'Tolonggg!'
+        ],
+        slap: [
+          'Plak! Pipiku panas!',
+          'aduhuhu!',
+          'Pipi na mo arfah!'
+        ],
+        sharp: [
+          'aduhi!',
+          'Baju baruku robek!',
+          'AAAAA!',
+          'ADUHAI!'
+        ],
+        gun: [
+          'Mana perisai mu!',
+          'Ampun bosku!',
+          'Panas panas panas!',
+          'Balala!'
+        ],
+        element: [
+          'AAAAAAA!',
+          'BERDIRIKA!',
+          'Gravitasi macam apa ini?!',
+          'Kiamat lokal!'
+        ],
+        heal: [
+          'Makasih, Makasih!',
+          'kuraccako'
+        ]
+      };
+
+      /* =========================================================================
+       * 4. GAME STATE & ECONOMY
+       * ========================================================================= */
+      const state = {
+        coins: 250,
+        totalDamage: 0,
+        combo: 1,
+        comboTimer: 0,
+        activeCategory: 'semua',
+        activeWeapon: 'hand',
+        unlockedWeapons: new Set(['hand', 'slap', 'knife']),
+        unlockAllSandbox: false,
+        dockCollapsed: false,
+        shakeTime: 0,
+        shakeIntensity: 0,
+        xrayTimer: 0,
+        flashAlpha: 0,
+        flashColor: '#ffffff'
+      };
+
+      /* =========================================================================
+       * 5. CANVAS & ARENA GEOMETRY SETUP
+       * ========================================================================= */
+      const arenaContainer = document.getElementById('arena-container');
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      let width = 360;
+      let height = 500;
+      let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const WALL_PAD = 18;
+      const FLOOR_HEIGHT = 26;
+
+      function getBounds() {
+        return {
+          left: WALL_PAD,
+          right: width - WALL_PAD,
+          top: WALL_PAD,
+          bottom: height - FLOOR_HEIGHT
+        };
+      }
+
+      /* =========================================================================
+       * 6. ARTICULATED VERLET RAGDOLL ("OKA")
+       * ========================================================================= */
+      class OkaRagdoll {
+        constructor() {
+          this.nodes = [];
+          this.sticks = [];
+          this.embeddedShurikens = [];
+          this.pinnedSpear = null;
+          this.bruises = [];
+          this.damage = 0;
+          this.burnTimer = 0;
+          this.shockTimer = 0;
+          this.blinkTimer = 2.0;
+          this.isBlinking = false;
+          this.speechText = '';
+          this.speechTimer = 0;
+          this.lastSpeechTime = 0;
+          this.reset(width * 0.5, height * 0.45);
+        }
+
+        reset(cx, cy) {
+          this.nodes = [
+            { id: 'head',    x: cx,      y: cy - 68, ox: cx,      oy: cy - 68, r: 24, mass: 1.1 }, // 0
+            { id: 'chest',   x: cx,      y: cy - 26, ox: cx,      oy: cy - 26, r: 20, mass: 1.5 }, // 1
+            { id: 'pelvis',  x: cx,      y: cy + 18, ox: cx,      oy: cy + 18, r: 18, mass: 1.5 }, // 2
+            { id: 'lElbow',  x: cx - 28, y: cy - 16, ox: cx - 28, oy: cy - 16, r: 9,  mass: 0.7 }, // 3
+            { id: 'lHand',   x: cx - 44, y: cy + 10, ox: cx - 44, oy: cy + 10, r: 10, mass: 0.6 }, // 4
+            { id: 'rElbow',  x: cx + 28, y: cy - 16, ox: cx + 28, oy: cy - 16, r: 9,  mass: 0.7 }, // 5
+            { id: 'rHand',   x: cx + 44, y: cy + 10, ox: cx + 44, oy: cy + 10, r: 10, mass: 0.6 }, // 6
+            { id: 'lKnee',   x: cx - 15, y: cy + 54, ox: cx - 15, oy: cy + 54, r: 10, mass: 0.8 }, // 7
+            { id: 'lFoot',   x: cx - 18, y: cy + 90, ox: cx - 18, oy: cy + 90, r: 11, mass: 0.9 }, // 8
+            { id: 'rKnee',   x: cx + 15, y: cy + 54, ox: cx + 15, oy: cy + 54, r: 10, mass: 0.8 }, // 9
+            { id: 'rFoot',   x: cx + 18, y: cy + 90, ox: cx + 18, oy: cy + 90, r: 11, mass: 0.9 }  // 10
+          ];
+
+          const dist = (a, b) => Math.hypot(this.nodes[a].x - this.nodes[b].x, this.nodes[a].y - this.nodes[b].y);
+
+          this.sticks = [
+            { a: 0, b: 1, len: dist(0, 1), stiffness: 0.95 }, // Neck
+            { a: 1, b: 2, len: dist(1, 2), stiffness: 0.98 }, // Spine
+            { a: 1, b: 3, len: dist(1, 3), stiffness: 0.9 },  // L Upper Arm
+            { a: 3, b: 4, len: dist(3, 4), stiffness: 0.9 },  // L Forearm
+            { a: 1, b: 5, len: dist(1, 5), stiffness: 0.9 },  // R Upper Arm
+            { a: 5, b: 6, len: dist(5, 6), stiffness: 0.9 },  // R Forearm
+            { a: 2, b: 7, len: dist(2, 7), stiffness: 0.92 }, // L Thigh
+            { a: 7, b: 8, len: dist(7, 8), stiffness: 0.92 }, // L Shin
+            { a: 2, b: 9, len: dist(2, 9), stiffness: 0.92 }, // R Thigh
+            { a: 9, b: 10, len: dist(9, 10), stiffness: 0.92 }, // R Shin
+            // Soft posture & anti-collapse cross-constraints
+            { a: 0, b: 2, len: dist(0, 2), stiffness: 0.14 },
+            { a: 7, b: 9, len: 28, stiffness: 0.08 }
+          ];
+
+          this.embeddedShurikens = [];
+          this.pinnedSpear = null;
+          this.bruises = [];
+          this.damage = 0;
+          this.burnTimer = 0;
+          this.shockTimer = 0;
+        }
+
+        say(category = 'general', force = false) {
+          const now = performance.now();
+          if (!force && now - this.lastSpeechTime < 1250) return;
+          const pool = OKA_QUOTES[category] || OKA_QUOTES.general;
+          this.speechText = pool[Math.floor(Math.random() * pool.length)];
+          this.speechTimer = 2.1;
+          this.lastSpeechTime = now;
+          sound.playOkaVoice(category === 'element' || category === 'sharp');
+        }
+
+        addDamage(amount, hitX, hitY, quoteCategory = 'general') {
+          this.damage += amount;
+          state.totalDamage += Math.round(amount);
+
+          // Combo escalation
+          state.combo = Math.min(99, state.combo + 1);
+          state.comboTimer = 2.4;
+
+          // Coin reward scaled slightly by combo
+          const earned = Math.max(1, Math.round((amount * 0.28) * (1 + Math.min(state.combo, 15) * 0.05)));
+          state.coins += earned;
+
+          // Add visual bruise / bandage on torso or head
+          if (this.bruises.length < 18 && Math.random() < 0.65) {
+            const targetIdx = Math.random() < 0.45 ? 0 : (Math.random() < 0.5 ? 1 : 2);
+            const node = this.nodes[targetIdx];
+            const angle = Math.random() * Math.PI * 2;
+            const rad = Math.random() * (node.r * 0.55);
+            this.bruises.push({
+              nodeIdx: targetIdx,
+              ox: Math.cos(angle) * rad,
+              oy: Math.sin(angle) * rad,
+              isBandage: Math.random() < 0.45,
+              rot: (Math.random() - 0.5) * 1.4
+            });
+          }
+
+          this.say(quoteCategory);
+          updateHUD();
+        }
+
+        applyImpulse(ix, iy, pointX = null, pointY = null, radius = 140) {
+          for (let i = 0; i < this.nodes.length; i++) {
+            const n = this.nodes[i];
+            let factor = 1;
+            if (pointX !== null && pointY !== null) {
+              const d = Math.hypot(n.x - pointX, n.y - pointY);
+              if (d > radius) continue;
+              factor = Math.max(0.25, 1 - d / radius);
+            }
+            n.ox -= (ix * factor) / n.mass;
+            n.oy -= (iy * factor) / n.mass;
+          }
+        }
+
+        getClosestNode(x, y, maxDist = 90) {
+          let best = null;
+          let bestD = maxDist;
+          for (let i = 0; i < this.nodes.length; i++) {
+            const n = this.nodes[i];
+            const d = Math.hypot(n.x - x, n.y - y);
+            if (d < bestD) {
+              bestD = d;
+              best = n;
+            }
+          }
+          return best;
+        }
+
+        getCenter() {
+          const chest = this.nodes[1];
+          return { x: chest.x, y: chest.y };
+        }
+
+        update(dt, grabbedNode, pointerPos) {
+          const bounds = getBounds();
+          const gravity = 0.46;
+          const friction = 0.991;
+
+          // Update timers
+          if (this.speechTimer > 0) this.speechTimer -= dt;
+          if (this.burnTimer > 0) {
+            this.burnTimer -= dt;
+            // Panic flailing while burning
+            if (Math.random() < 0.35) {
+              const randNode = this.nodes[Math.floor(Math.random() * this.nodes.length)];
+              randNode.ox += (Math.random() - 0.5) * 7;
+              randNode.oy += (Math.random() - 0.3) * 6;
+            }
+            if (Math.random() < 0.55) {
+              const c = this.nodes[Math.floor(Math.random() * 3)];
+              spawnParticle(c.x + (Math.random() - 0.5) * 24, c.y + (Math.random() - 0.5) * 24, (Math.random() - 0.5) * 2, -2.5 - Math.random() * 2.5, 'fire', 0.45);
+            }
+          }
+          if (this.shockTimer > 0) {
+            this.shockTimer -= dt;
+            for (const n of this.nodes) {
+              n.x += (Math.random() - 0.5) * 5;
+              n.y += (Math.random() - 0.5) * 5;
+            }
+          }
+
+          // Blinking logic
+          this.blinkTimer -= dt;
+          if (this.blinkTimer <= 0) {
+            this.isBlinking = !this.isBlinking;
+            this.blinkTimer = this.isBlinking ? 0.14 : (2.2 + Math.random() * 2.6);
+          }
+
+          // Verlet Integration
+          for (let i = 0; i < this.nodes.length; i++) {
+            const n = this.nodes[i];
+            if (grabbedNode === n) continue;
+
+            // If pinned by spear, lock chest/pelvis node
+            if (this.pinnedSpear && this.pinnedSpear.nodeIdx === i) {
+              n.x = this.pinnedSpear.pinX;
+              n.y = this.pinnedSpear.pinY;
+              n.ox = n.x;
+              n.oy = n.y;
+              continue;
+            }
+
+            let vx = (n.x - n.ox) * friction;
+            let vy = (n.y - n.oy) * friction;
+
+            // Clamp extreme velocities so ragdoll never explodes out of bounds
+            const speed = Math.hypot(vx, vy);
+            if (speed > 42) {
+              vx = (vx / speed) * 42;
+              vy = (vy / speed) * 42;
+            }
+
+            n.ox = n.x;
+            n.oy = n.y;
+            n.x += vx;
+            n.y += vy + gravity;
+          }
+
+          // Subtle upright standing posture bias when feet are near the floor and calm
+          const lFoot = this.nodes[8];
+          const rFoot = this.nodes[10];
+          const head = this.nodes[0];
+          const chest = this.nodes[1];
+          const feetOnFloor = (lFoot.y >= bounds.bottom - 14 || rFoot.y >= bounds.bottom - 14);
+          const headSpeed = Math.hypot(head.x - head.ox, head.y - head.oy);
+          if (feetOnFloor && headSpeed < 2.2 && !grabbedNode && !this.pinnedSpear && this.burnTimer <= 0) {
+            head.y -= 0.42;
+            chest.y -= 0.22;
+          }
+
+          // Active Grab Spring Tether
+          if (grabbedNode && pointerPos) {
+            const dx = pointerPos.x - grabbedNode.x;
+            const dy = pointerPos.y - grabbedNode.y;
+            grabbedNode.ox = grabbedNode.x - dx * 0.48;
+            grabbedNode.oy = grabbedNode.y - dy * 0.48;
+            grabbedNode.x += dx * 0.55;
+            grabbedNode.y += dy * 0.55;
+          }
+
+          // Pinned Spear countdown
+          if (this.pinnedSpear) {
+            this.pinnedSpear.timer -= dt;
+            if (this.pinnedSpear.timer <= 0) {
+              this.pinnedSpear = null;
+            }
+          }
+
+          // Solve Constraints (6 iterations for crisp stability)
+          for (let iter = 0; iter < 6; iter++) {
+            for (let i = 0; i < this.sticks.length; i++) {
+              const s = this.sticks[i];
+              const a = this.nodes[s.a];
+              const b = this.nodes[s.b];
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const d = Math.hypot(dx, dy) || 0.001;
+              const diff = ((s.len - d) / d) * s.stiffness * 0.5;
+              const offX = dx * diff;
+              const offY = dy * diff;
+
+              const aLocked = (grabbedNode === a) || (this.pinnedSpear && this.pinnedSpear.nodeIdx === s.a);
+              const bLocked = (grabbedNode === b) || (this.pinnedSpear && this.pinnedSpear.nodeIdx === s.b);
+
+              if (!aLocked) {
+                a.x -= offX;
+                a.y -= offY;
+              }
+              if (!bLocked) {
+                b.x += offX;
+                b.y += offY;
+              }
+            }
+
+            // Arena Boundary Collisions
+            for (let i = 0; i < this.nodes.length; i++) {
+              const n = this.nodes[i];
+              const vx = n.x - n.ox;
+              const vy = n.y - n.oy;
+              const bounce = 0.52;
+
+              if (n.x - n.r < bounds.left) {
+                n.x = bounds.left + n.r;
+                n.ox = n.x + vx * bounce;
+                this.checkWallSlam(Math.abs(vx), n.x, n.y);
+              } else if (n.x + n.r > bounds.right) {
+                n.x = bounds.right - n.r;
+                n.ox = n.x + vx * bounce;
+                this.checkWallSlam(Math.abs(vx), n.x, n.y);
+              }
+
+              if (n.y - n.r < bounds.top) {
+                n.y = bounds.top + n.r;
+                n.oy = n.y + vy * bounce;
+                this.checkWallSlam(Math.abs(vy), n.x, n.y);
+              } else if (n.y + n.r > bounds.bottom) {
+                n.y = bounds.bottom - n.r;
+                n.oy = n.y + vy * bounce;
+                // Floor friction
+                const floorVx = n.x - n.ox;
+                n.ox = n.x - floorVx * 0.86;
+                this.checkWallSlam(Math.abs(vy), n.x, n.y);
+              }
+            }
+          }
+        }
+
+        checkWallSlam(impactSpeed, x, y) {
+          if (impactSpeed > 13.5) {
+            const dmg = Math.round((impactSpeed - 11) * 1.8);
+            this.addDamage(dmg, x, y, 'general');
+            sound.playSlap(Math.min(1.5, impactSpeed / 16));
+            triggerShake(Math.min(12, impactSpeed * 0.5), 0.16);
+            spawnPopup(x, y - 14, 'BUK!', '#38bdf8');
+            for (let k = 0; k < 6; k++) {
+              spawnParticle(x, y, (Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7, 'spark', 0.35);
+            }
+          }
+        }
+
+        draw(ctx) {
+          const [head, chest, pelvis, lElbow, lHand, rElbow, rHand, lKnee, lFoot, rKnee, rFoot] = this.nodes;
+          const isXray = state.xrayTimer > 0;
+
+          ctx.save();
+
+          // Helper to draw capsule limb
+          const drawLimb = (p1, p2, thickness, color) => {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineWidth = thickness;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = isXray ? '#38bdf8' : color;
+            ctx.stroke();
+
+            if (isXray) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.lineWidth = 4;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+            }
+          };
+
+          // Back Arms & Legs (Left side slightly darker for depth)
+          drawLimb(pelvis, lKnee, 15, '#0f172a');
+          drawLimb(lKnee, lFoot, 13, '#1e293b');
+          drawLimb(chest, lElbow, 13, '#1e293b');
+          drawLimb(lElbow, lHand, 11, '#e0ac84');
+
+          // Shoes (Left)
+          if (!isXray) {
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.arc(lFoot.x, lFoot.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(lFoot.x - 8, lFoot.y + 4, 16, 4);
+          }
+
+          // Torso / Hoodie Body
+          const torsoAngle = Math.atan2(pelvis.y - chest.y, pelvis.x - chest.x) - Math.PI / 2;
+          const torsoMidX = (chest.x + pelvis.x) * 0.5;
+          const torsoMidY = (chest.y + pelvis.y) * 0.5;
+          const torsoLen = Math.hypot(pelvis.x - chest.x, pelvis.y - chest.y) + 22;
+
+          ctx.save();
+          ctx.translate(torsoMidX, torsoMidY);
+          ctx.rotate(torsoAngle);
+
+          if (isXray) {
+            // Ribcage X-ray
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, -torsoLen * 0.4);
+            ctx.lineTo(0, torsoLen * 0.4);
+            ctx.stroke();
+            for (let r = -14; r <= 8; r += 7) {
+              ctx.beginPath();
+              ctx.ellipse(0, r, 13, 3, 0, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          } else {
+            // Stylish dark hoodie with cyan accent stripe
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(-19, -torsoLen * 0.5, 38, torsoLen, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            // Cyan vertical hoodie stripe & zipper
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillRect(-3, -torsoLen * 0.44, 6, torsoLen * 0.88);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-1, -torsoLen * 0.44, 2, torsoLen * 0.88);
+          }
+          ctx.restore();
+
+          // Front Leg & Arm (Right side)
+          drawLimb(pelvis, rKnee, 16, '#1e293b');
+          drawLimb(rKnee, rFoot, 14, '#334155');
+          if (!isXray) {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(rFoot.x, rFoot.y, 10.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(rFoot.x - 8, rFoot.y + 4, 16, 4);
+          }
+
+          drawLimb(chest, rElbow, 14, '#334155');
+          drawLimb(rElbow, rHand, 12, '#f6c39b');
+
+          // Hands
+          if (!isXray) {
+            ctx.fillStyle = '#e0ac84';
+            ctx.beginPath();
+            ctx.arc(lHand.x, lHand.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f6c39b';
+            ctx.beginPath();
+            ctx.arc(rHand.x, rHand.y, 8.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Head
+          const headAngle = Math.atan2(chest.y - head.y, chest.x - head.x) - Math.PI / 2;
+          ctx.save();
+          ctx.translate(head.x, head.y);
+          ctx.rotate(headAngle);
+
+          if (isXray) {
+            ctx.fillStyle = 'rgba(14, 165, 233, 0.28)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, head.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Skull teeth
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-7, 8, 14, 6);
+          } else {
+            // Head base
+            ctx.fillStyle = '#f6c39b';
+            ctx.strokeStyle = '#d99b6c';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, head.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Soot / scorch tint if heavily damaged or burned
+            if (this.damage > 180 || this.burnTimer > 0) {
+              const sootAlpha = Math.min(0.45, (this.damage - 150) / 1400 + (this.burnTimer > 0 ? 0.25 : 0));
+              ctx.fillStyle = `rgba(15, 23, 42, ${sootAlpha})`;
+              ctx.beginPath();
+              ctx.arc(0, 0, head.r - 1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Stylized Hair Tuft
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(0, -4, head.r + 1, Math.PI * 1.08, Math.PI * 1.92);
+            ctx.quadraticCurveTo(10, -28, 2, -22);
+            ctx.quadraticCurveTo(-5, -31, -12, -21);
+            ctx.closePath();
+            ctx.fill();
+
+            // Expressive Eyes & Mouth
+            const headVel = Math.hypot(head.x - head.ox, head.y - head.oy);
+            const isHurt = this.speechTimer > 1.2 || this.shockTimer > 0 || headVel > 8;
+            const isKO = this.damage > 900;
+
+            ctx.strokeStyle = '#0f172a';
+            ctx.fillStyle = '#0f172a';
+            ctx.lineWidth = 2.3;
+            ctx.lineCap = 'round';
+
+            if (isKO) {
+              // X X eyes
+              [-8, 8].forEach((ex) => {
+                ctx.beginPath();
+                ctx.moveTo(ex - 3.5, -6);
+                ctx.lineTo(ex + 3.5, 0);
+                ctx.moveTo(ex + 3.5, -6);
+                ctx.lineTo(ex - 3.5, 0);
+                ctx.stroke();
+              });
+            } else if (isHurt) {
+              // > < squinted hurt eyes
+              ctx.beginPath();
+              ctx.moveTo(-11, -6);
+              ctx.lineTo(-5, -3);
+              ctx.lineTo(-11, 0);
+              ctx.moveTo(11, -6);
+              ctx.lineTo(5, -3);
+              ctx.lineTo(11, 0);
+              ctx.stroke();
+            } else if (this.isBlinking) {
+              ctx.beginPath();
+              ctx.moveTo(-11, -3);
+              ctx.lineTo(-5, -3);
+              ctx.moveTo(5, -3);
+              ctx.lineTo(11, -3);
+              ctx.stroke();
+            } else {
+              // Normal cartoon eyes
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath();
+              ctx.arc(-8, -3, 4.5, 0, Math.PI * 2);
+              ctx.arc(8, -3, 4.5, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#0f172a';
+              ctx.beginPath();
+              ctx.arc(-7.5, -3, 2.2, 0, Math.PI * 2);
+              ctx.arc(8.5, -3, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+
+            // Mouth (animated when talking or shocked)
+            if (this.speechTimer > 0 && Math.sin(performance.now() * 0.025) > 0) {
+              ctx.fillStyle = '#7f1d1d';
+              ctx.beginPath();
+              ctx.ellipse(0, 9, 5.5, 4.2, 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (isHurt || headVel > 6) {
+              ctx.fillStyle = '#7f1d1d';
+              ctx.beginPath();
+              ctx.arc(0, 9, 4.5, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              // Cheeky grin
+              ctx.beginPath();
+              ctx.arc(0, 7, 6, 0.15 * Math.PI, 0.85 * Math.PI);
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+
+          // Render Dynamic Bruises & Adhesive Bandages attached to body nodes
+          for (const b of this.bruises) {
+            const n = this.nodes[b.nodeIdx];
+            ctx.save();
+            ctx.translate(n.x + b.ox, n.y + b.oy);
+            ctx.rotate(b.rot);
+            if (b.isBandage) {
+              ctx.fillStyle = '#fcd34d';
+              ctx.strokeStyle = '#d97706';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.roundRect(-7, -2.5, 14, 5, 2);
+              ctx.fill();
+              ctx.stroke();
+              ctx.fillStyle = '#fef3c7';
+              ctx.fillRect(-2.5, -2, 5, 4);
+            } else {
+              ctx.fillStyle = 'rgba(88, 28, 135, 0.42)';
+              ctx.beginPath();
+              ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          // Render Embedded Shurikens moving with Oka's body parts
+          for (const s of this.embeddedShurikens) {
+            const n = this.nodes[s.nodeIdx];
+            const bodyAngle = Math.atan2(pelvis.y - chest.y, pelvis.x - chest.x);
+            const curAngle = bodyAngle + s.relAngle;
+            const sx = n.x + Math.cos(curAngle) * s.dist;
+            const sy = n.y + Math.sin(curAngle) * s.dist;
+            drawShurikenGraphic(ctx, sx, sy, s.spin + bodyAngle, 11);
+          }
+
+          // Render Pinned Spear if Oka is pinned to wall/floor
+          if (this.pinnedSpear) {
+            const ps = this.pinnedSpear;
+            ctx.save();
+            ctx.translate(ps.pinX, ps.pinY);
+            ctx.rotate(ps.angle);
+            // Spear shaft
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-68, 0);
+            ctx.lineTo(14, 0);
+            ctx.stroke();
+            // Steel tip
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(24, 0);
+            ctx.lineTo(10, -5);
+            ctx.lineTo(10, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          }
+
+          // Floating Nametag Badge "Oka" above head (always visible & clamped in arena)
+          this.drawNametagAndSpeech(ctx, head);
+
+          ctx.restore();
+        }
+
+        drawNametagAndSpeech(ctx, head) {
+          const tagX = Math.max(54, Math.min(width - 54, head.x));
+          const tagY = Math.max(36, head.y - 44);
+
+          ctx.save();
+          // Pill background
+          const pillW = 58;
+          const pillH = 22;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.65)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.roundRect(tagX - pillW / 2, tagY - pillH / 2, pillW, pillH, 11);
+          ctx.fill();
+          ctx.stroke();
+
+          // Cyan status dot
+          ctx.fillStyle = '#22d3ee';
+          ctx.beginPath();
+          ctx.arc(tagX - 15, tagY, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Name text "Oka"
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '800 12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Oka', tagX + 5, tagY + 0.5);
+
+          // Speech Bubble when Oka speaks
+          if (this.speechTimer > 0 && this.speechText) {
+            ctx.font = '700 12px Inter, sans-serif';
+            const textW = ctx.measureText(this.speechText).width;
+            const boxW = Math.min(width - 28, textW + 24);
+            const boxH = 30;
+            const bx = Math.max(boxW / 2 + 10, Math.min(width - boxW / 2 - 10, head.x));
+            const by = Math.max(66, tagY - 30);
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(bx - boxW / 2, by - boxH / 2, boxW, boxH, 10);
+            ctx.fill();
+            ctx.stroke();
+
+            // Speech bubble pointer triangle
+            ctx.beginPath();
+            ctx.moveTo(bx - 5, by + boxH / 2 - 1);
+            ctx.lineTo(bx, by + boxH / 2 + 6);
+            ctx.lineTo(bx + 5, by + boxH / 2 - 1);
+            ctx.closePath();
+            ctx.fillStyle = '#f8fafc';
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText(this.speechText, bx, by + 0.5);
+          }
+
+          ctx.restore();
+        }
+      }
+
+      /* =========================================================================
+       * 7. PROJECTILES, TRAPS, HAZARDS, PARTICLES & POPUPS
+       * ========================================================================= */
+      let oka = new OkaRagdoll();
+
+      const projectiles = [];   // shurikens, spears, bullets, rockets, grenades, meteors
+      const spikeTraps = [];    // placed floor/wall spike traps
+      const blackHoles = [];    // active gravity vortices
+      const lightningBolts = []; // visual lightning flashes
+      const slashTrails = [];   // knife / slap trails
+      const shockwaves = [];    // expanding blast / impact rings
+      const particles = [];     // sparks, smoke, fire, brass casings, debris
+      const popups = [];        // comic damage text ("PLAK!", "DUAR!", etc.)
+
+      function spawnParticle(x, y, vx, vy, type = 'spark', life = 0.5) {
+        if (particles.length > 260) particles.shift();
+        particles.push({
+          x, y, vx, vy, type,
+          life,
+          maxLife: life,
+          size: type === 'smoke' ? (8 + Math.random() * 10) : (type === 'fire' ? (6 + Math.random() * 8) : (2.5 + Math.random() * 3)),
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random() - 0.5) * 14
+        });
+      }
+
+      function spawnPopup(x, y, text, color = '#facc15') {
+        if (popups.length > 18) popups.shift();
+        popups.push({
+          x: Math.max(45, Math.min(width - 45, x)),
+          y: Math.max(45, Math.min(height - 45, y)),
+          vy: -1.6 - Math.random() * 0.8,
+          text,
+          color,
+          life: 0.75,
+          maxLife: 0.75,
+          scale: 0.6
+        });
+      }
+
+      function spawnShockwave(x, y, maxR, color = '#38bdf8') {
+        shockwaves.push({ x, y, r: 8, maxR, color, life: 0.35, maxLife: 0.35 });
+      }
+
+      function triggerShake(intensity = 8, duration = 0.2) {
+        state.shakeIntensity = Math.max(state.shakeIntensity, intensity);
+        state.shakeTime = Math.max(state.shakeTime, duration);
+      }
+
+      function triggerFlash(color = '#ffffff', alpha = 0.35) {
+        state.flashColor = color;
+        state.flashAlpha = alpha;
+      }
+
+      function triggerExplosion(x, y, radius = 155, force = 28, damage = 65) {
+        sound.playExplosion();
+        triggerShake(18, 0.38);
+        triggerFlash('#fb923c', 0.32);
+        spawnShockwave(x, y, radius * 1.15, '#f97316');
+        spawnPopup(x, y - 20, 'DUARRR!', '#fb923c');
+
+        // Fire & Smoke burst
+        for (let i = 0; i < 28; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 2 + Math.random() * 10;
+          spawnParticle(x, y, Math.cos(ang) * spd, Math.sin(ang) * spd, i % 2 === 0 ? 'fire' : 'smoke', 0.55 + Math.random() * 0.4);
+        }
+        for (let i = 0; i < 14; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 4 + Math.random() * 11;
+          spawnParticle(x, y, Math.cos(ang) * spd, Math.sin(ang) * spd, 'spark', 0.45);
+        }
+
+        // Blast impulse on Oka
+        const center = oka.getCenter();
+        const dx = center.x - x;
+        const dy = center.y - y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < radius * 1.35) {
+          const falloff = Math.max(0.25, 1 - dist / (radius * 1.35));
+          const nx = (dx / (dist || 1));
+          const ny = (dy / (dist || 1)) - 0.45; // upward lift
+          oka.applyImpulse(nx * force * falloff, ny * force * falloff);
+          oka.addDamage(Math.round(damage * falloff), center.x, center.y, 'element');
+          if (falloff > 0.55) oka.burnTimer = Math.max(oka.burnTimer, 1.4);
+        }
+      }
+
+      function drawShurikenGraphic(ctx, x, y, rot, r = 12) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+          ctx.lineTo(Math.cos(a + Math.PI / 4) * (r * 0.34), Math.sin(a + Math.PI / 4) * (r * 0.34));
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      /* =========================================================================
+       * 8. WEAPON INTERACTION HANDLERS (TAP, DRAG, SWIPE, HOLD)
+       * ========================================================================= */
+      const pointer = {
+        down: false,
+        x: 0,
+        y: 0,
+        prevX: 0,
+        prevY: 0,
+        startX: 0,
+        startY: 0,
+        grabbedNode: null,
+        holdCooldown: 0,
+        hammerAnim: null
+      };
+
+      function getSpawnEdgePoint(targetX, targetY) {
+        // Pick an edge away from target so projectiles fly across the chamber cleanly
+        const leftSide = targetX > width * 0.5;
+        const sx = leftSide ? WALL_PAD + 14 : width - WALL_PAD - 14;
+        const sy = Math.max(60, Math.min(height - 80, targetY + (Math.random() - 0.5) * 140));
+        return { x: sx, y: sy };
+      }
+
+      function fireWeaponSingle(x, y, prevX = x, prevY = y) {
+        const w = state.activeWeapon;
+        const center = oka.getCenter();
+
+        if (w === 'slap') {
+          const dist = Math.hypot(center.x - x, center.y - y);
+          const dirX = center.x >= x ? 1 : -1;
+          sound.playSlap(1.3);
+          spawnShockwave(x, y, 75, '#38bdf8');
+          slashTrails.push({ x1: x - dirX * 45, y1: y - 20, x2: x + dirX * 45, y2: y + 15, color: '#38bdf8', life: 0.22, maxLife: 0.22, width: 14 });
+          if (dist < 145) {
+            oka.applyImpulse(dirX * 22, -9, x, y, 165);
+            oka.addDamage(22, x, y, 'slap');
+            spawnPopup(x, y - 16, 'PLAK!', '#38bdf8');
+            triggerShake(9, 0.16);
+          }
+        } else if (w === 'hammer') {
+          sound.playHammer();
+          pointer.hammerAnim = { x, y, life: 0.28, maxLife: 0.28 };
+          spawnShockwave(x, y, 95, '#f59e0b');
+          triggerShake(14, 0.24);
+          for (let i = 0; i < 12; i++) {
+            spawnParticle(x, y, (Math.random() - 0.5) * 9, -Math.random() * 8, 'spark', 0.4);
+          }
+          const dist = Math.hypot(center.x - x, center.y - y);
+          if (dist < 150) {
+            const dx = (center.x - x) / (dist || 1);
+            oka.applyImpulse(dx * 24, -18, x, y, 175);
+            oka.addDamage(42, x, y, 'general');
+            spawnPopup(x, y - 22, 'DUK!!', '#f59e0b');
+          }
+        } else if (w === 'knife') {
+          sound.playBlade(false);
+          const dx = x - prevX;
+          const dy = y - prevY;
+          const swipeLen = Math.hypot(dx, dy);
+          const x1 = swipeLen > 8 ? prevX : x - 35;
+          const y1 = swipeLen > 8 ? prevY : y - 25;
+          const x2 = swipeLen > 8 ? x : x + 35;
+          const y2 = swipeLen > 8 ? y : y + 25;
+          slashTrails.push({ x1, y1, x2, y2, color: '#e2e8f0', life: 0.2, maxLife: 0.2, width: 7 });
+
+          const hitNode = oka.getClosestNode(x, y, 68);
+          if (hitNode) {
+            const ix = swipeLen > 5 ? (dx / swipeLen) * 14 : (center.x >= x ? 11 : -11);
+            const iy = swipeLen > 5 ? (dy / swipeLen) * 14 - 4 : -7;
+            oka.applyImpulse(ix, iy, x, y, 95);
+            oka.addDamage(26, x, y, 'sharp');
+            spawnPopup(x, y - 14, swipeLen > 12 ? 'SRAT!' : 'JLEB!', '#f43f5e');
+            for (let i = 0; i < 7; i++) {
+              spawnParticle(x, y, (Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7, 'spark', 0.3);
+            }
+          }
+        } else if (w === 'shuriken') {
+          sound.playBlade(true);
+          const origin = getSpawnEdgePoint(x, y);
+          const ang = Math.atan2(y - origin.y, x - origin.x);
+          const speed = 22;
+          projectiles.push({
+            type: 'shuriken',
+            x: origin.x,
+            y: origin.y,
+            vx: Math.cos(ang) * speed,
+            vy: Math.sin(ang) * speed,
+            rot: 0,
+            life: 3.0
+          });
+        } else if (w === 'spear') {
+          sound.playBlade(true);
+          const origin = getSpawnEdgePoint(x, y);
+          const ang = Math.atan2(y - origin.y, x - origin.x);
+          const speed = 26;
+          projectiles.push({
+            type: 'spear',
+            x: origin.x,
+            y: origin.y,
+            vx: Math.cos(ang) * speed,
+            vy: Math.sin(ang) * speed,
+            angle: ang,
+            impaledNodeIdx: -1,
+            life: 3.5
+          });
+        } else if (w === 'spikes') {
+          const bounds = getBounds();
+          // Snap trap onto nearest floor or wall
+          const distFloor = Math.abs(y - bounds.bottom);
+          const distLeft = Math.abs(x - bounds.left);
+          const distRight = Math.abs(x - bounds.right);
+
+          let tx = x, ty = bounds.bottom, normalX = 0, normalY = -1;
+          if (distLeft < 65 && distLeft < distFloor) {
+            tx = bounds.left; ty = Math.max(bounds.top + 35, Math.min(bounds.bottom - 35, y));
+            normalX = 1; normalY = 0;
+          } else if (distRight < 65 && distRight < distFloor) {
+            tx = bounds.right; ty = Math.max(bounds.top + 35, Math.min(bounds.bottom - 35, y));
+            normalX = -1; normalY = 0;
+          } else {
+            tx = Math.max(bounds.left + 35, Math.min(bounds.right - 35, x));
+            ty = bounds.bottom;
+          }
+
+          if (spikeTraps.length >= 6) spikeTraps.shift();
+          spikeTraps.push({ x: tx, y: ty, nx: normalX, ny: normalY, cooldown: 0 });
+          sound.playBlade(true);
+          spawnPopup(tx, ty - 20, 'JEBAKAN SIAP!', '#94a3b8');
+        } else if (w === 'pistol') {
+          sound.playGunshot(false);
+          const origin = getSpawnEdgePoint(x, y);
+          const ang = Math.atan2(y - origin.y, x - origin.x);
+          projectiles.push({
+            type: 'bullet',
+            x: origin.x,
+            y: origin.y,
+            vx: Math.cos(ang) * 34,
+            vy: Math.sin(ang) * 34,
+            life: 1.2
+          });
+          // Shell casing
+          spawnParticle(origin.x, origin.y, (origin.x < width / 2 ? 2 : -2) + (Math.random() - 0.5) * 2, -3 - Math.random() * 2, 'casing', 1.2);
+          triggerShake(4, 0.08);
+        } else if (w === 'shotgun') {
+          sound.playGunshot(true);
+          const origin = getSpawnEdgePoint(x, y);
+          const baseAng = Math.atan2(y - origin.y, x - origin.x);
+          for (let p = 0; p < 7; p++) {
+            const spread = (Math.random() - 0.5) * 0.28;
+            const spd = 28 + Math.random() * 8;
+            projectiles.push({
+              type: 'bullet',
+              x: origin.x,
+              y: origin.y,
+              vx: Math.cos(baseAng + spread) * spd,
+              vy: Math.sin(baseAng + spread) * spd,
+              life: 0.9
+            });
+          }
+          spawnParticle(origin.x, origin.y, 0, -2, 'smoke', 0.45);
+          spawnParticle(origin.x, origin.y, (origin.x < width / 2 ? 3 : -3), -4, 'casing', 1.2);
+          triggerShake(11, 0.18);
+        } else if (w === 'grenade') {
+          sound.playBlade(false);
+          const origin = getSpawnEdgePoint(x, y);
+          const vx = (x - origin.x) * 0.045;
+          const vy = Math.min(-5, (y - origin.y) * 0.045 - 6);
+          projectiles.push({
+            type: 'grenade',
+            x: origin.x,
+            y: origin.y,
+            vx,
+            vy,
+            rot: 0,
+            timer: 1.85
+          });
+        } else if (w === 'rpg') {
+          sound.playGunshot(true);
+          const origin = getSpawnEdgePoint(x, y);
+          const ang = Math.atan2(y - origin.y, x - origin.x);
+          projectiles.push({
+            type: 'rocket',
+            x: origin.x,
+            y: origin.y,
+            vx: Math.cos(ang) * 11,
+            vy: Math.sin(ang) * 11,
+            ax: Math.cos(ang) * 0.85,
+            ay: Math.sin(ang) * 0.85,
+            angle: ang,
+            life: 3.0
+          });
+          triggerShake(8, 0.15);
+        } else if (w === 'lightning') {
+          sound.playLightning();
+          triggerShake(16, 0.3);
+          triggerFlash('#e0f2fe', 0.45);
+          state.xrayTimer = 0.26;
+
+          const hitTarget = Math.hypot(center.x - x, center.y - y) < 130 ? center : { x, y };
+          // Generate jagged bolt segments from ceiling to target
+          const segments = [];
+          let curX = hitTarget.x + (Math.random() - 0.5) * 60;
+          let curY = WALL_PAD;
+          const steps = 9;
+          for (let s = 1; s <= steps; s++) {
+            const t = s / steps;
+            const nx = s === steps ? hitTarget.x : (curX + (hitTarget.x - curX) * 0.35 + (Math.random() - 0.5) * 48);
+            const ny = WALL_PAD + (hitTarget.y - WALL_PAD) * t;
+            segments.push({ x1: curX, y1: curY, x2: nx, y2: ny });
+            curX = nx;
+            curY = ny;
+          }
+          lightningBolts.push({ segments, life: 0.28, maxLife: 0.28 });
+          spawnShockwave(hitTarget.x, hitTarget.y, 90, '#38bdf8');
+          spawnPopup(hitTarget.x, hitTarget.y - 24, 'ZAPPP!!', '#38bdf8');
+
+          if (Math.hypot(center.x - hitTarget.x, center.y - hitTarget.y) < 130) {
+            oka.shockTimer = 0.55;
+            oka.applyImpulse((Math.random() - 0.5) * 16, -14);
+            oka.addDamage(58, hitTarget.x, hitTarget.y, 'element');
+          }
+        } else if (w === 'blackhole') {
+          sound.playBlackHole();
+          if (blackHoles.length >= 2) blackHoles.shift();
+          blackHoles.push({
+            x: Math.max(60, Math.min(width - 60, x)),
+            y: Math.max(70, Math.min(height - 70, y)),
+            timer: 3.6,
+            rot: 0
+          });
+          spawnPopup(x, y - 24, 'VORTEX AKTIF!', '#c084fc');
+        } else if (w === 'meteor') {
+          sound.playBlade(false);
+          for (let m = 0; m < 5; m++) {
+            const targetX = Math.max(40, Math.min(width - 40, x + (Math.random() - 0.5) * 190));
+            const startX = Math.max(30, Math.min(width - 30, targetX - 90 + Math.random() * 180));
+            const startY = -30 - m * 45;
+            const ang = Math.atan2(height - startY, targetX - startX);
+            const spd = 14 + Math.random() * 4;
+            projectiles.push({
+              type: 'meteor',
+              x: startX,
+              y: startY,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              r: 14 + Math.random() * 6,
+              life: 3.0
+            });
+          }
+          spawnPopup(x, Math.max(80, y - 40), 'HUJAN METEOR!', '#fb923c');
+        }
+      }
+
+      function updateContinuousWeapons(dt) {
+        if (!pointer.down) return;
+        const w = state.activeWeapon;
+        const x = pointer.x;
+        const y = pointer.y;
+        const center = oka.getCenter();
+
+        if (w === 'chainsaw') {
+          sound.playChainsawTick();
+          const hitNode = oka.getClosestNode(x, y, 65);
+          if (hitNode) {
+            triggerShake(5, 0.08);
+            oka.applyImpulse((Math.random() - 0.5) * 9, -2.5 + (Math.random() - 0.5) * 6, x, y, 80);
+            for (let i = 0; i < 3; i++) {
+              spawnParticle(x, y, (Math.random() - 0.5) * 10, -2 - Math.random() * 6, 'spark', 0.28);
+            }
+            pointer.holdCooldown -= dt;
+            if (pointer.holdCooldown <= 0) {
+              pointer.holdCooldown = 0.14;
+              oka.addDamage(12, x, y, 'sharp');
+              spawnPopup(x + (Math.random() - 0.5) * 30, y - 20, 'NGIIING!', '#fbbf24');
+            }
+          }
+        } else if (w === 'minigun') {
+          pointer.holdCooldown -= dt;
+          if (pointer.holdCooldown <= 0) {
+            pointer.holdCooldown = 0.065;
+            sound.playGunshot(false);
+            const origin = getSpawnEdgePoint(x, y);
+            const ang = Math.atan2(y - origin.y, x - origin.x) + (Math.random() - 0.5) * 0.12;
+            projectiles.push({
+              type: 'bullet',
+              x: origin.x,
+              y: origin.y,
+              vx: Math.cos(ang) * 34,
+              vy: Math.sin(ang) * 34,
+              life: 1.1
+            });
+            spawnParticle(origin.x, origin.y, (origin.x < width / 2 ? 2.5 : -2.5), -3.5, 'casing', 1.1);
+            triggerShake(3.5, 0.06);
+          }
+        } else if (w === 'laser') {
+          sound.playLaserTick();
+          const origin = getSpawnEdgePoint(x, y);
+          // Raycast check against Oka nodes
+          for (const n of oka.nodes) {
+            const distToRay = pointToSegmentDistance(n.x, n.y, origin.x, origin.y, x, y);
+            if (distToRay < n.r + 12) {
+              const ang = Math.atan2(y - origin.y, x - origin.x);
+              n.ox -= Math.cos(ang) * 2.2;
+              n.oy -= Math.sin(ang) * 2.2 - 0.6;
+              spawnParticle(n.x, n.y, (Math.random() - 0.5) * 6, -2 - Math.random() * 4, 'fire', 0.32);
+              pointer.holdCooldown -= dt;
+              if (pointer.holdCooldown <= 0) {
+                pointer.holdCooldown = 0.15;
+                oka.addDamage(15, n.x, n.y, 'gun');
+                spawnPopup(n.x, n.y - 18, 'ZING!', '#f472b6');
+              }
+              break;
+            }
+          }
+          spawnParticle(x, y, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, 'spark', 0.25);
+        } else if (w === 'flamethrower') {
+          sound.playFlameTick();
+          const origin = getSpawnEdgePoint(x, y);
+          const ang = Math.atan2(y - origin.y, x - origin.x);
+          for (let f = 0; f < 2; f++) {
+            const spread = (Math.random() - 0.5) * 0.24;
+            const spd = 11 + Math.random() * 5;
+            spawnParticle(origin.x, origin.y, Math.cos(ang + spread) * spd, Math.sin(ang + spread) * spd, 'fire', 0.48);
+          }
+          // Check if flame stream hits Oka
+          const distToRay = pointToSegmentDistance(center.x, center.y, origin.x, origin.y, x, y);
+          if (distToRay < 65) {
+            oka.burnTimer = Math.max(oka.burnTimer, 1.5);
+            oka.applyImpulse(Math.cos(ang) * 1.8, -1.2);
+            pointer.holdCooldown -= dt;
+            if (pointer.holdCooldown <= 0) {
+              pointer.holdCooldown = 0.18;
+              oka.addDamage(14, center.x, center.y, 'element');
+              spawnPopup(center.x, center.y - 25, 'PANAS!', '#f97316');
+            }
+          }
+        }
+      }
+
+      function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+        const l2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+        if (l2 === 0) return Math.hypot(px - x1, py - y1);
+        let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+      }
+
+      /* =========================================================================
+       * 9. POINTER EVENT LISTENERS (TOUCH & MOUSE)
+       * ========================================================================= */
+      function getCanvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+
+      canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        sound.init();
+        const pos = getCanvasCoords(e);
+        pointer.down = true;
+        pointer.x = pos.x;
+        pointer.y = pos.y;
+        pointer.prevX = pos.x;
+        pointer.prevY = pos.y;
+        pointer.startX = pos.x;
+        pointer.startY = pos.y;
+        pointer.holdCooldown = 0;
+
+        if (state.activeWeapon === 'hand') {
+          pointer.grabbedNode = oka.getClosestNode(pos.x, pos.y, 85);
+        } else {
+          fireWeaponSingle(pos.x, pos.y, pos.x, pos.y);
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!pointer.down) return;
+        e.preventDefault();
+        const pos = getCanvasCoords(e);
+        pointer.prevX = pointer.x;
+        pointer.prevY = pointer.y;
+        pointer.x = pos.x;
+        pointer.y = pos.y;
+
+        // Knife slash on drag movement
+        if (state.activeWeapon === 'knife') {
+          const moveDist = Math.hypot(pointer.x - pointer.prevX, pointer.y - pointer.prevY);
+          if (moveDist > 14) {
+            fireWeaponSingle(pointer.x, pointer.y, pointer.prevX, pointer.prevY);
+          }
+        }
+      });
+
+      const endPointer = () => {
+        pointer.down = false;
+        pointer.grabbedNode = null;
+      };
+      canvas.addEventListener('pointerup', endPointer);
+      canvas.addEventListener('pointercancel', endPointer);
+      canvas.addEventListener('pointerleave', endPointer);
+
+      /* =========================================================================
+       * 10. SIMULATION STEP & RENDERING LOOP
+       * ========================================================================= */
+      let lastTime = performance.now();
+
+      function updateSimulation(dt) {
+        const bounds = getBounds();
+
+        // Combo decay
+        if (state.combo > 1) {
+          state.comboTimer -= dt;
+          if (state.comboTimer <= 0) {
+            state.combo = 1;
+            updateHUD();
+          }
+        }
+
+        // Screen effects decay
+        if (state.shakeTime > 0) state.shakeTime -= dt;
+        if (state.xrayTimer > 0) state.xrayTimer -= dt;
+        if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - dt * 1.4);
+        if (pointer.hammerAnim) {
+          pointer.hammerAnim.life -= dt;
+          if (pointer.hammerAnim.life <= 0) pointer.hammerAnim = null;
+        }
+
+        // Continuous hold weapons
+        updateContinuousWeapons(dt);
+
+        // Black Holes gravity vortex
+        for (let i = blackHoles.length - 1; i >= 0; i--) {
+          const bh = blackHoles[i];
+          bh.timer -= dt;
+          bh.rot += dt * 7;
+
+          // Pull all Oka nodes violently inward
+          for (const n of oka.nodes) {
+            const dx = bh.x - n.x;
+            const dy = bh.y - n.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const pull = Math.min(3.4, 420 / (dist + 35));
+            // Tangential swirl + inward suction
+            n.ox -= (dx / dist) * pull - (dy / dist) * (pull * 0.45);
+            n.oy -= (dy / dist) * pull + (dx / dist) * (pull * 0.45);
+          }
+
+          if (Math.random() < 0.4) {
+            const ang = Math.random() * Math.PI * 2;
+            const r = 70 + Math.random() * 40;
+            spawnParticle(bh.x + Math.cos(ang) * r, bh.y + Math.sin(ang) * r, -Math.cos(ang) * 4, -Math.sin(ang) * 4, 'spark', 0.35);
+          }
+
+          if (Math.random() < 0.14) {
+            oka.addDamage(8, bh.x, bh.y, 'element');
+          }
+
+          if (bh.timer <= 0) {
+            triggerExplosion(bh.x, bh.y, 130, 24, 45);
+            blackHoles.splice(i, 1);
+          }
+        }
+
+        // Update Oka Ragdoll
+        oka.update(dt, pointer.grabbedNode, pointer.down ? { x: pointer.x, y: pointer.y } : null);
+
+        // Spike Traps collision with Oka
+        for (const trap of spikeTraps) {
+          if (trap.cooldown > 0) trap.cooldown -= dt;
+          for (const n of oka.nodes) {
+            const d = Math.hypot(n.x - trap.x, n.y - trap.y);
+            if (d < n.r + 18 && trap.cooldown <= 0) {
+              trap.cooldown = 0.35;
+              sound.playBlade(true);
+              oka.applyImpulse(trap.nx * 18 + (Math.random() - 0.5) * 6, trap.ny * 18 - 6, trap.x, trap.y, 110);
+              oka.addDamage(24, trap.x, trap.y, 'sharp');
+              spawnPopup(trap.x, trap.y - 20, 'AWH DURI!', '#f43f5e');
+              for (let s = 0; s < 6; s++) {
+                spawnParticle(trap.x, trap.y, (Math.random() - 0.5) * 7, -Math.random() * 7, 'spark', 0.3);
+              }
+              break;
+            }
+          }
+        }
+
+        // Update Projectiles
+        const chest = oka.nodes[1];
+        const pelvis = oka.nodes[2];
+        const bodyAngle = Math.atan2(pelvis.y - chest.y, pelvis.x - chest.x);
+
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const p = projectiles[i];
+          p.life -= dt;
+
+          if (p.type === 'shuriken') {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += 0.45;
+
+            // Check hit on Oka
+            const hitNode = oka.getClosestNode(p.x, p.y, 28);
+            if (hitNode) {
+              const nodeIdx = oka.nodes.indexOf(hitNode);
+              oka.applyImpulse(p.vx * 0.45, p.vy * 0.45, p.x, p.y, 70);
+              oka.addDamage(18, p.x, p.y, 'sharp');
+              spawnPopup(p.x, p.y - 14, 'TANCAP!', '#38bdf8');
+              if (oka.embeddedShurikens.length < 16) {
+                oka.embeddedShurikens.push({
+                  nodeIdx,
+                  relAngle: Math.atan2(p.y - hitNode.y, p.x - hitNode.x) - bodyAngle,
+                  dist: Math.min(hitNode.r * 0.75, Math.hypot(p.x - hitNode.x, p.y - hitNode.y)),
+                  spin: p.rot
+                });
+              }
+              projectiles.splice(i, 1);
+              continue;
+            }
+
+            // Bounce off walls
+            if (p.x < bounds.left || p.x > bounds.right) {
+              p.vx *= -0.75;
+              p.x = Math.max(bounds.left, Math.min(bounds.right, p.x));
+              sound.playBlade(true);
+            }
+            if (p.y < bounds.top || p.y > bounds.bottom) {
+              p.vy *= -0.75;
+              p.y = Math.max(bounds.top, Math.min(bounds.bottom, p.y));
+              sound.playBlade(true);
+            }
+          } else if (p.type === 'spear') {
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.impaledNodeIdx === -1) {
+              const hitNode = oka.getClosestNode(p.x, p.y, 32);
+              if (hitNode) {
+                p.impaledNodeIdx = oka.nodes.indexOf(hitNode);
+                oka.applyImpulse(p.vx * 0.65, p.vy * 0.65, p.x, p.y, 90);
+                oka.addDamage(32, p.x, p.y, 'sharp');
+                spawnPopup(p.x, p.y - 18, 'TERTUSUK!', '#f43f5e');
+              }
+            } else {
+              // Drag impaled node along with spear until hitting wall/floor
+              const impaled = oka.nodes[p.impaledNodeIdx];
+              impaled.x = p.x;
+              impaled.y = p.y;
+              impaled.ox = p.x;
+              impaled.oy = p.y;
+            }
+
+            // Pin to wall or floor on contact
+            if (p.x <= bounds.left + 8 || p.x >= bounds.right - 8 || p.y >= bounds.bottom - 8) {
+              if (p.impaledNodeIdx !== -1) {
+                oka.pinnedSpear = {
+                  nodeIdx: p.impaledNodeIdx,
+                  pinX: Math.max(bounds.left + 12, Math.min(bounds.right - 12, p.x)),
+                  pinY: Math.min(bounds.bottom - 12, p.y),
+                  angle: p.angle,
+                  timer: 3.2
+                };
+                oka.say('sharp', true);
+                spawnPopup(p.x, p.y - 24, 'TERKUNCI!', '#fbbf24');
+              }
+              sound.playHammer();
+              projectiles.splice(i, 1);
+              continue;
+            }
+          } else if (p.type === 'bullet') {
+            p.x += p.vx;
+            p.y += p.vy;
+
+            const hitNode = oka.getClosestNode(p.x, p.y, 26);
+            if (hitNode) {
+              oka.applyImpulse(p.vx * 0.35, p.vy * 0.35 - 2.5, p.x, p.y, 75);
+              oka.addDamage(14, p.x, p.y, 'gun');
+              spawnPopup(p.x, p.y - 12, 'DOR!', '#facc15');
+              for (let s = 0; s < 5; s++) {
+                spawnParticle(p.x, p.y, (Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7, 'spark', 0.25);
+              }
+              projectiles.splice(i, 1);
+              continue;
+            }
+
+            if (p.x < bounds.left || p.x > bounds.right || p.y < bounds.top || p.y > bounds.bottom) {
+              for (let s = 0; s < 4; s++) {
+                spawnParticle(p.x, p.y, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, 'spark', 0.2);
+              }
+              projectiles.splice(i, 1);
+              continue;
+            }
+          } else if (p.type === 'grenade') {
+            p.timer -= dt;
+            p.vy += 0.42;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vx * 0.06;
+
+            if (p.x - 10 < bounds.left) { p.x = bounds.left + 10; p.vx *= -0.65; }
+            if (p.x + 10 > bounds.right) { p.x = bounds.right - 10; p.vx *= -0.65; }
+            if (p.y + 10 > bounds.bottom) { p.y = bounds.bottom - 10; p.vy *= -0.58; p.vx *= 0.85; }
+
+            if (p.timer <= 0) {
+              triggerExplosion(p.x, p.y, 165, 29, 72);
+              projectiles.splice(i, 1);
+              continue;
+            }
+          } else if (p.type === 'rocket') {
+            p.vx += p.ax;
+            p.vy += p.ay;
+            p.x += p.vx;
+            p.y += p.vy;
+            spawnParticle(p.x - Math.cos(p.angle) * 14, p.y - Math.sin(p.angle) * 14, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 'smoke', 0.45);
+
+            const hitNode = oka.getClosestNode(p.x, p.y, 32);
+            if (hitNode || p.x <= bounds.left || p.x >= bounds.right || p.y <= bounds.top || p.y >= bounds.bottom) {
+              triggerExplosion(p.x, p.y, 185, 33, 85);
+              projectiles.splice(i, 1);
+              continue;
+            }
+          } else if (p.type === 'meteor') {
+            p.x += p.vx;
+            p.y += p.vy;
+            spawnParticle(p.x, p.y, (Math.random() - 0.5) * 3, -2, 'fire', 0.35);
+
+            const hitNode = oka.getClosestNode(p.x, p.y, 34);
+            if (hitNode || p.y >= bounds.bottom - 8) {
+              triggerExplosion(p.x, p.y, 145, 25, 55);
+              projectiles.splice(i, 1);
+              continue;
+            }
+          }
+
+          if (p.life <= 0) projectiles.splice(i, 1);
+        }
+
+        // Update Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const pt = particles[i];
+          pt.life -= dt;
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.rot += pt.vrot * dt;
+
+          if (pt.type === 'casing') {
+            pt.vy += 0.35;
+            if (pt.y > bounds.bottom - 3) {
+              pt.y = bounds.bottom - 3;
+              pt.vy *= -0.45;
+              pt.vx *= 0.75;
+            }
+          } else if (pt.type === 'smoke') {
+            pt.vy -= 0.04;
+            pt.size += dt * 12;
+          }
+
+          if (pt.life <= 0) particles.splice(i, 1);
+        }
+
+        // Update Shockwaves, Slash Trails, Lightning & Popups
+        for (let i = shockwaves.length - 1; i >= 0; i--) {
+          const sw = shockwaves[i];
+          sw.life -= dt;
+          sw.r += (sw.maxR - sw.r) * 0.25;
+          if (sw.life <= 0) shockwaves.splice(i, 1);
+        }
+
+        for (let i = slashTrails.length - 1; i >= 0; i--) {
+          slashTrails[i].life -= dt;
+          if (slashTrails[i].life <= 0) slashTrails.splice(i, 1);
+        }
+
+        for (let i = lightningBolts.length - 1; i >= 0; i--) {
+          lightningBolts[i].life -= dt;
+          if (lightningBolts[i].life <= 0) lightningBolts.splice(i, 1);
+        }
+
+        for (let i = popups.length - 1; i >= 0; i--) {
+          const pop = popups[i];
+          pop.life -= dt;
+          pop.y += pop.vy;
+          pop.scale = Math.min(1.15, pop.scale + dt * 4.5);
+          if (pop.life <= 0) popups.splice(i, 1);
+        }
+      }
+
+      function renderArena() {
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        // Apply Camera Screen Shake
+        if (state.shakeTime > 0) {
+          const sx = (Math.random() - 0.5) * state.shakeIntensity * 2;
+          const sy = (Math.random() - 0.5) * state.shakeIntensity * 2;
+          ctx.translate(sx, sy);
+        }
+
+        // 1. Dark Industrial Sandbox Background
+        const bgGrad = ctx.createRadialGradient(width * 0.5, height * 0.28, 30, width * 0.5, height * 0.5, Math.max(width, height) * 0.85);
+        bgGrad.addColorStop(0, '#131c31');
+        bgGrad.addColorStop(0.6, '#0b1120');
+        bgGrad.addColorStop(1, '#060911');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Subtle Blueprint Grid
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.055)';
+        ctx.lineWidth = 1;
+        const gridSize = 36;
+        ctx.beginPath();
+        for (let gx = WALL_PAD; gx < width - WALL_PAD; gx += gridSize) {
+          ctx.moveTo(gx, WALL_PAD);
+          ctx.lineTo(gx, height - FLOOR_HEIGHT);
+        }
+        for (let gy = WALL_PAD; gy < height - FLOOR_HEIGHT; gy += gridSize) {
+          ctx.moveTo(WALL_PAD, gy);
+          ctx.lineTo(width - WALL_PAD, gy);
+        }
+        ctx.stroke();
+
+        // Chamber Steel Walls & Floor Hazard Trim
+        const bounds = getBounds();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, width, bounds.top);
+        ctx.fillRect(0, 0, bounds.left, height);
+        ctx.fillRect(bounds.right, 0, WALL_PAD, height);
+        ctx.fillRect(0, bounds.bottom, width, FLOOR_HEIGHT);
+
+        // Hazard diagonal stripes on floor
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(bounds.left, bounds.bottom, bounds.right - bounds.left, 10);
+        ctx.clip();
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(bounds.left, bounds.bottom, bounds.right - bounds.left, 10);
+        ctx.fillStyle = '#0f172a';
+        for (let hx = bounds.left - 20; hx < bounds.right + 20; hx += 24) {
+          ctx.beginPath();
+          ctx.moveTo(hx, bounds.bottom);
+          ctx.lineTo(hx + 12, bounds.bottom);
+          ctx.lineTo(hx + 4, bounds.bottom + 10);
+          ctx.lineTo(hx - 8, bounds.bottom + 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Inner neon-slate border
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+
+        // 2. Black Holes
+        for (const bh of blackHoles) {
+          ctx.save();
+          ctx.translate(bh.x, bh.y);
+          ctx.rotate(bh.rot);
+          const grad = ctx.createRadialGradient(0, 0, 6, 0, 0, 68);
+          grad.addColorStop(0, '#000000');
+          grad.addColorStop(0.35, 'rgba(147, 51, 234, 0.7)');
+          grad.addColorStop(0.7, 'rgba(6, 182, 212, 0.25)');
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, 68, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 26, 0, Math.PI * 1.4);
+          ctx.stroke();
+
+          ctx.fillStyle = '#020617';
+          ctx.beginPath();
+          ctx.arc(0, 0, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 3. Spike Traps
+        for (const trap of spikeTraps) {
+          ctx.save();
+          ctx.translate(trap.x, trap.y);
+          const angle = Math.atan2(trap.ny, trap.nx) + Math.PI / 2;
+          ctx.rotate(angle);
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-22, -4, 44, 6);
+          ctx.fillStyle = '#e2e8f0';
+          for (let sx = -18; sx <= 12; sx += 10) {
+            ctx.beginPath();
+            ctx.moveTo(sx, -4);
+            ctx.lineTo(sx + 5, -18);
+            ctx.lineTo(sx + 10, -4);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // 4. Oka Ragdoll
+        oka.draw(ctx);
+
+        // 5. Active Grab Tether or Continuous Weapon Visuals
+        if (pointer.down && state.activeWeapon === 'hand' && pointer.grabbedNode) {
+          ctx.save();
+          ctx.strokeStyle = '#22d3ee';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(pointer.grabbedNode.x, pointer.grabbedNode.y);
+          ctx.lineTo(pointer.x, pointer.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = 'rgba(34, 211, 238, 0.25)';
+          ctx.beginPath();
+          ctx.arc(pointer.x, pointer.y, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else if (pointer.down && state.activeWeapon === 'laser') {
+          const origin = getSpawnEdgePoint(pointer.x, pointer.y);
+          ctx.save();
+          ctx.strokeStyle = 'rgba(236, 72, 153, 0.45)';
+          ctx.lineWidth = 14;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(origin.x, origin.y);
+          ctx.lineTo(pointer.x, pointer.y);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(origin.x, origin.y);
+          ctx.lineTo(pointer.x, pointer.y);
+          ctx.stroke();
+          ctx.restore();
+        } else if (pointer.down && state.activeWeapon === 'chainsaw') {
+          ctx.save();
+          ctx.translate(pointer.x + (Math.random() - 0.5) * 4, pointer.y + (Math.random() - 0.5) * 4);
+          ctx.fillStyle = '#f59e0b';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-24, -10, 48, 20, 8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(-20, -13, 40, 4);
+          ctx.fillRect(-20, 9, 40, 4);
+          ctx.restore();
+        }
+
+        // Hammer swing visual
+        if (pointer.hammerAnim) {
+          const h = pointer.hammerAnim;
+          const prog = 1 - h.life / h.maxLife;
+          ctx.save();
+          ctx.translate(h.x, h.y);
+          ctx.rotate(-1.2 + prog * 1.4);
+          ctx.fillStyle = '#92400e';
+          ctx.fillRect(-4, -55, 8, 55);
+          ctx.fillStyle = '#475569';
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(-20, -68, 40, 22, 4);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 6. Projectiles
+        for (const p of projectiles) {
+          if (p.type === 'shuriken') {
+            drawShurikenGraphic(ctx, p.x, p.y, p.rot, 12);
+          } else if (p.type === 'spear') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-45, 0);
+            ctx.lineTo(12, 0);
+            ctx.stroke();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(22, 0);
+            ctx.lineTo(10, -5);
+            ctx.lineTo(10, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          } else if (p.type === 'bullet') {
+            ctx.save();
+            ctx.strokeStyle = '#fde047';
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(p.x - p.vx * 0.6, p.y - p.vy * 0.6);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            ctx.restore();
+          } else if (p.type === 'grenade') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = '#15803d';
+            ctx.strokeStyle = '#052e16';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            // Blinking red fuse LED
+            if (Math.sin(performance.now() * 0.03) > 0) {
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(0, -4, 3.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          } else if (p.type === 'rocket') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(-14, -4, 22, 8);
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(14, 0);
+            ctx.lineTo(6, -5);
+            ctx.lineTo(6, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          } else if (p.type === 'meteor') {
+            ctx.save();
+            const grad = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, p.r * 1.4);
+            grad.addColorStop(0, '#fef08a');
+            grad.addColorStop(0.5, '#f97316');
+            grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 1.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        // 7. Particles
+        for (const pt of particles) {
+          const alpha = Math.max(0, pt.life / pt.maxLife);
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          if (pt.type === 'spark') {
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pt.type === 'fire') {
+            ctx.fillStyle = alpha > 0.5 ? '#f97316' : '#ef4444';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pt.type === 'smoke') {
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pt.type === 'casing') {
+            ctx.translate(pt.x, pt.y);
+            ctx.rotate(pt.rot);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-3, -1.5, 6, 3);
+          }
+          ctx.restore();
+        }
+
+        // 8. Shockwaves, Slash Trails & Lightning Bolts
+        for (const sw of shockwaves) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, sw.life / sw.maxLife);
+          ctx.strokeStyle = sw.color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        for (const st of slashTrails) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, st.life / st.maxLife);
+          ctx.strokeStyle = st.color;
+          ctx.lineWidth = st.width;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(st.x1, st.y1);
+          ctx.lineTo(st.x2, st.y2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        for (const bolt of lightningBolts) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, bolt.life / bolt.maxLife);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 7;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          for (const seg of bolt.segments) {
+            ctx.moveTo(seg.x1, seg.y1);
+            ctx.lineTo(seg.x2, seg.y2);
+          }
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 9. Comic Damage Popups
+        for (const pop of popups) {
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, (pop.life / pop.maxLife) * 1.4);
+          ctx.translate(pop.x, pop.y);
+          ctx.scale(pop.scale, pop.scale);
+          ctx.font = '900 18px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#090d16';
+          ctx.strokeText(pop.text, 0, 0);
+          ctx.fillStyle = pop.color;
+          ctx.fillText(pop.text, 0, 0);
+          ctx.restore();
+        }
+
+        // 10. Screen Hit-Flash Overlay
+        if (state.flashAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = state.flashAlpha;
+          ctx.fillStyle = state.flashColor;
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+
+      function gameLoop(now) {
+        const dt = Math.min(0.033, (now - lastTime) / 1000);
+        lastTime = now;
+
+        updateSimulation(dt);
+        renderArena();
+        requestAnimationFrame(gameLoop);
+      }
+
+      /* =========================================================================
+       * 11. HUD, WEAPON DOCK & SANDBOX CONTROLS UI RENDERING
+       * ========================================================================= */
+      const elCoinValue = document.getElementById('coin-value');
+      const elComboValue = document.getElementById('combo-value');
+      const elComboPill = document.getElementById('combo-pill');
+      const elTotalDamage = document.getElementById('total-damage-value');
+      const elHintText = document.getElementById('tool-hint-text');
+      const elCategoryTabs = document.getElementById('category-tabs');
+      const elWeaponCards = document.getElementById('weapon-cards');
+      const elToastBanner = document.getElementById('toast-banner');
+      const elToastText = document.getElementById('toast-text');
+
+      let toastTimeout = null;
+      function showToast(msg) {
+        elToastText.textContent = msg;
+        elToastBanner.classList.remove('opacity-0', 'translate-y-2');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          elToastBanner.classList.add('opacity-0', 'translate-y-2');
+        }, 2100);
+      }
+
+      function isWeaponUnlocked(weapon) {
+        return state.unlockAllSandbox || weapon.cost === 0 || state.unlockedWeapons.has(weapon.id);
+      }
+
+      function updateHUD() {
+        elCoinValue.textContent = state.coins.toLocaleString('id-ID');
+        elTotalDamage.textContent = state.totalDamage.toLocaleString('id-ID');
+        elComboValue.textContent = `x${state.combo}`;
+
+        if (state.combo >= 5) {
+          elComboPill.classList.add('border-rose-500/70', 'bg-rose-950/50');
+        } else {
+          elComboPill.classList.remove('border-rose-500/70', 'bg-rose-950/50');
+        }
+      }
+
+      function renderCategories() {
+        elCategoryTabs.innerHTML = CATEGORIES.map((cat) => {
+          const active = state.activeCategory === cat.id;
+          return `
+            <button type="button" data-cat="${cat.id}"
+              class="px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition active:scale-95 ${
+                active
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700/80'
+              }">
+              ${cat.label}
+            </button>
+          `;
+        }).join('');
+      }
+
+      function renderWeapons() {
+        const filtered = state.activeCategory === 'semua'
+          ? WEAPONS
+          : WEAPONS.filter((w) => w.category === state.activeCategory);
+
+        elWeaponCards.innerHTML = filtered.map((w) => {
+          const unlocked = isWeaponUnlocked(w);
+          const active = state.activeWeapon === w.id;
+
+          return `
+            <button type="button" data-weapon="${w.id}"
+              class="relative w-[82px] sm:w-[88px] shrink-0 flex flex-col items-center justify-between p-2 rounded-2xl border transition active:scale-95 ${
+                active
+                  ? 'bg-gradient-to-b from-cyan-500/25 to-slate-900/95 border-cyan-400 text-white active-tool-card'
+                  : unlocked
+                    ? 'bg-slate-900/85 hover:bg-slate-800/90 border-slate-700/80 text-slate-200'
+                    : 'bg-slate-950/85 border-slate-800/90 text-slate-400'
+              }">
+              <!-- Icon Container -->
+              <div class="w-8 h-8 rounded-xl flex items-center justify-center mb-1 ${
+                active
+                  ? 'bg-cyan-400/20 text-cyan-300'
+                  : unlocked
+                    ? 'bg-slate-800 text-slate-200'
+                    : 'bg-slate-900 text-slate-500'
+              }">
+                <div class="w-5 h-5">${w.svg}</div>
+              </div>
+
+              <!-- Weapon Name -->
+              <span class="text-[11px] font-bold leading-tight text-center line-clamp-1 w-full">
+                ${w.name}
+              </span>
+
+              <!-- Status / Price Tag -->
+              <div class="mt-1 flex items-center justify-center gap-0.5 text-[10px] font-extrabold">
+                ${
+                  unlocked
+                    ? `<span class="${active ? 'text-cyan-300' : 'text-emerald-400'}">${active ? 'Aktif' : 'Siap'}</span>`
+                    : `<svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                       <span class="text-amber-400 tabular-nums">${w.cost}</span>`
+                }
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      function selectWeapon(weaponId) {
+        const weapon = WEAPONS.find((w) => w.id === weaponId);
+        if (!weapon) return;
+
+        if (!isWeaponUnlocked(weapon)) {
+          if (state.coins >= weapon.cost) {
+            state.coins -= weapon.cost;
+            state.unlockedWeapons.add(weapon.id);
+            sound.playCoin();
+            showToast(`${weapon.name} berhasil dibuka!`);
+            updateHUD();
+          } else {
+            showToast(`Koin kurang! Butuh ${weapon.cost} Koin atau tekan Buka Semua.`);
+            return;
+          }
+        }
+
+        state.activeWeapon = weapon.id;
+        elHintText.textContent = weapon.hint;
+        renderWeapons();
+      }
+
+      // Event Delegation for Categories & Weapon Cards
+      elCategoryTabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-cat]');
+        if (!btn) return;
+        state.activeCategory = btn.dataset.cat;
+        renderCategories();
+        renderWeapons();
+      });
+
+      elWeaponCards.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-weapon]');
+        if (!btn) return;
+        selectWeapon(btn.dataset.weapon);
+      });
+
+      // Top HUD Buttons
+      document.getElementById('btn-audio').addEventListener('click', () => {
+        const on = sound.toggle();
+        document.getElementById('icon-audio-on').classList.toggle('hidden', !on);
+        document.getElementById('icon-audio-off').classList.toggle('hidden', on);
+        document.getElementById('label-audio').textContent = on ? 'Suara' : 'Bisu';
+        showToast(on ? 'Efek suara diaktifkan' : 'Efek suara dibisukan');
+      });
+
+      document.getElementById('btn-heal').addEventListener('click', () => {
+        sound.playCoin();
+        projectiles.length = 0;
+        spikeTraps.length = 0;
+        blackHoles.length = 0;
+        oka.reset(width * 0.5, height * 0.45);
+        oka.say('heal', true);
+        spawnShockwave(width * 0.5, height * 0.45, 110, '#34d399');
+        showToast('Oka telah dipulihkan sepenuhnya!');
+      });
+
+      document.getElementById('btn-unlock-all').addEventListener('click', () => {
+        state.unlockAllSandbox = !state.unlockAllSandbox;
+        const btn = document.getElementById('btn-unlock-all');
+        const lbl = document.getElementById('label-unlock-all');
+        if (state.unlockAllSandbox) {
+          btn.classList.remove('bg-amber-500/15', 'text-amber-300', 'border-amber-500/40');
+          btn.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-300');
+          lbl.textContent = 'Mode Bebas';
+          showToast('Semua 18 senjata terbuka gratis!');
+        } else {
+          btn.classList.add('bg-amber-500/15', 'text-amber-300', 'border-amber-500/40');
+          btn.classList.remove('bg-amber-400', 'text-slate-950', 'border-amber-300');
+          lbl.textContent = 'Buka Semua';
+          showToast('Mode progresi Koin aktif');
+        }
+        renderWeapons();
+      });
+
+      // Collapse / Expand Weapon Dock
+      const elWeaponListWrapper = document.getElementById('weapon-list-wrapper');
+      const elDockChevron = document.getElementById('icon-dock-chevron');
+      document.getElementById('btn-toggle-dock').addEventListener('click', () => {
+        state.dockCollapsed = !state.dockCollapsed;
+        if (state.dockCollapsed) {
+          elWeaponListWrapper.style.maxHeight = '0px';
+          elWeaponListWrapper.style.paddingTop = '0px';
+          elWeaponListWrapper.style.paddingBottom = '0px';
+          elDockChevron.style.transform = 'rotate(180deg)';
+        } else {
+          elWeaponListWrapper.style.maxHeight = '140px';
+          elWeaponListWrapper.style.paddingTop = '0.625rem';
+          elWeaponListWrapper.style.paddingBottom = '0.625rem';
+          elDockChevron.style.transform = 'rotate(0deg)';
+        }
+      });
+
+      /* =========================================================================
+       * 12. RESPONSIVE RESIZE OBSERVER & BOOTSTRAP
+       * ========================================================================= */
+      function resizeCanvas() {
+        const rect = arenaContainer.getBoundingClientRect();
+        width = Math.max(280, rect.width);
+        height = Math.max(260, rect.height);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        // Keep Oka safely inside new bounds after orientation/window resize
+        const bounds = getBounds();
+        for (const n of oka.nodes) {
+          n.x = Math.max(bounds.left + n.r, Math.min(bounds.right - n.r, n.x));
+          n.y = Math.max(bounds.top + n.r, Math.min(bounds.bottom - n.r, n.y));
+          n.ox = n.x;
+          n.oy = n.y;
+        }
+      }
+
+      const resizeObserver = new ResizeObserver(() => resizeCanvas());
+      resizeObserver.observe(arenaContainer);
+
+      window.addEventListener('load', () => {
+        resizeCanvas();
+        oka.reset(width * 0.5, height * 0.45);
+        renderCategories();
+        renderWeapons();
+        updateHUD();
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+      });
+    })();
+  </script>
+</body>
+  </html>
